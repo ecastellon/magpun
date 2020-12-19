@@ -29,7 +29,7 @@ con_dm <- function(x = character()) {
     cn <- try(DBI::dbConnect(RSQLite::SQLite(), x),
               silent = TRUE)
     if (inherits(cn, "try-error")) {
-        warning("\n... base de datos ", x, "no existe !!!",
+        warning("\n... base de datos ", x, " no existe !!!",
                 call. = FALSE)
         cn <- NULL
     }
@@ -59,62 +59,6 @@ qry_dm <- function(qry = character(), dbf = character()) {
     invisible(x)
 }
 
-#' Municipios
-#' @description devuelve data.frame con los códigos y nombres de los
-#'     municipios y los departamentos a los que pertenecen
-#' @param dbf character: ruta de la base de datos; si se omite, se
-#'     obtiene de la variable-ambiente DBDEPMUN
-#' @return data.frame o NULL
-#'
-#' @export
-#' @author eddy castellón
-municipios <- function(dbf = character()) {
-    stopifnot("arg. dbf inadmisible" = is.character(dbf))
-    cc <- paste("select a.mun, a.municipio, b.departamento",
-                "from municipio a, departamento b",
-                "where a.dpt = b.dpt",
-                "order by a.mun")
-
-    x <- qry_dm(dbf, cc)
-
-    invisible(x)
-}
-
-#' Municipios
-#' @description Municipios de un departamento
-#' @param x código (integer) o nombre (character) del departamento
-#' @param dbf ruta de acceso a la base de datos de municipios; por
-#'     omisión, se toma de la variable-ambiente DBDEPMUN
-#' @return data.frame o NULL
-#' @export
-municipios_dpt <- function(x, dbf = character()) {
-    stopifnot("arg. x inadmisible" = filled_int(x) || filled_char(x),
-              "arg. dbf inadmisible" = is.character(dbf))
-
-    qr <- paste("select a.mun, a.municipio, b.dpt, b.departamento",
-                "from municipio a, departamento b"
-                "where a.mun = b.dpt")
-    dm <- qry_dm(dbf, qr)
-
-    rs <- NULL
-    if (!is.null(dm)) {
-        if (is.character(x)) {# estandariza para comparar
-            dp <- dm$departamento %>% tolower() %>% sin_tilde()
-            x %<>% ajustar_sp() %>% tolower() %>% sin_tilde()
-            ii <- is.element(dp, x)
-        } else {
-            ii <- is.element(dm$dpt, x)
-        }
-        
-        if (any(ii)) {
-            rs <- dm[ii, c("mun", "municipio")]
-        } else {
-        }
-    }
-
-    rs
-}
-
 #' Departamentos
 #' @description devuelve data.frame con los códigos y nombres de los
 #'     departamentos
@@ -129,7 +73,38 @@ departamentos <- function(file = character()) {
                 "from departamento",
                 "order by departamento")
 
-    x <- qry_dm(file, cc)
+    x <- qry_dm(cc, file)
+
+    invisible(x)
+}
+
+#' Municipios
+#' @description devuelve data.frame con los códigos y nombres de los
+#'     municipios y los departamentos a los que pertenecen
+#' @param dpt numeric: códigos de los departamentos; por omisión,
+#'     todos los municipios
+#' @param dbf character: ruta de la base de datos; si se omite, se
+#'     obtiene de la variable-ambiente DBDEPMUN
+#' @return data.frame o NULL
+#'
+#' @export
+#' @author eddy castellón
+municipios <- function(dpt = integer(), dbf = character()) {
+    stopifnot("arg. dbf inadmisible" = is.character(dbf),
+              "arg. dpt inadmisible" = is.numeric(dpt))
+    if (is_vacuo(dpt)) {
+        cc <- paste("select a.mun, a.municipio, b.departamento",
+                    "from municipio a, departamento b",
+                    "where a.dpt = b.dpt",
+                    "order by a.mun")
+    } else {
+        cc <- paste("select mun, municipio from municipio",
+                    "where dpt in(",
+                    Reduce(function(...)paste(..., sep = ","), dpt),
+                    ")")
+    }
+    
+    x <- qry_dm(cc, dbf)
 
     invisible(x)
 }
@@ -137,7 +112,7 @@ departamentos <- function(file = character()) {
 #' Validar-Dpto-Muni
 #' @description El código o nombre del departamento o municipio está
 #'     en la base de datos?
-#' @param x código (integer) o nombre (character)
+#' @param x código (numeric) o nombre (character)
 #' @param dfm data.frame con el código (integer) y el nombre
 #'     (character) del departamento o municipio
 #' @param ccod character: nombre de la columna del data.frame con los
@@ -148,18 +123,16 @@ departamentos <- function(file = character()) {
 #' @return logical
 #' @export
 es_dm <- function(x, dfm, ccod = "mun", cnom = "municipio") {
-    stopifnot("arg. x inválido" = filled_int(x) || filled_char(x),
+    stopifnot("arg. x inválido" = filled_num(x) || filled_char(x),
               "arg. dfm inválido" = is.data.frame(dfm),
               "arg. dfm inválido" = is.integer(dfm[[ccod]]),
               "arg. dfm inválido" = is.character(dfm[[cnom]]))
 
-    if (is.integer(x)) {
+    if (is.numeric(x)) {
         mm <- dfm[[ccod]]
     } else {
-        mm <- tolower(dfm[[cnom]]) %>% sin_tilde()
-        x %<>% ajustar_sp() %>%
-            tolower() %>%
-            sin_tilde()
+        mm <- sec_letras(dfm[[cnom]])
+        x  <- sec_letras(x)
     }
     is.element(x, mm)
 }
@@ -167,10 +140,9 @@ es_dm <- function(x, dfm, ccod = "mun", cnom = "municipio") {
 #' Municipio-válido
 #' @description Comprueba si el código o nombre del municipio está en
 #'     la base de datos de municipios
-#' @param x integer o character: código (integer) o nombre del
-#'     municipio (character)
+#' @param x código (numeric) o nombre del municipio (character)
 #' @param dbf character: ruta de la base de datos de los municipios;
-#' por omisión, tomado de la variable-ambiente DBDEPMUN
+#'     por omisión, tomado de la variable-ambiente DBDEPMUN
 #' @return logical
 #' @seealso municipios
 #' @export
@@ -184,8 +156,7 @@ es_municipio <- function(x, dbf = character()) {
 #' Departamento-válido
 #' @description Comprueba si el código o nombre del departamento está
 #'     en la base de datos de departamentos
-#' @param x integer o character: código (integer) o nombre del
-#'     departamento (character)
+#' @param x código (numeric) o nombre (character) del departamento
 #' @param dbf character: ruta de la base de datos de los
 #'     departamentos; por omisión, se toma de la variable-ambiente
 #'     DBDEPMUN
@@ -193,7 +164,7 @@ es_municipio <- function(x, dbf = character()) {
 #' @export
 #'
 es_departamento <- function(x, dbf = character()) {
-    stopifnot("arg. x inadmisible" = filled_int(x) || filled_char(x),
+    stopifnot("arg. x inadmisible" = filled_num(x) || filled_char(x),
               "arg. dbf inadmisible" = is.character(dbf))
 
     es_dm(x, departamentos(dbf))

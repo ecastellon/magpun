@@ -23,23 +23,24 @@ test_that("query-data",
     expect_error(qry_dm(qry = c("aa", "bb")))
 
     aa <- "select * from departamento"
-    bb <- qry_dm(aa)
+    bb <- qry_dm(aa, RD$find_file("data/depmun.sqlite"))
     expect_true(is.data.frame(bb))
     expect_true(nrow(bb) == 17)
 })
 
-test_that("data.frame municipio departamento",
-{
-    skip("")
-    dd <- df_muni()
-    expect_true(inherits(dd, "data.frame"))
-    expect_null(df_muni("fake.shp"))
-    expect_null(df_muni("fake.rda"))
-})
-
 test_that("municipio-dpt",
 {
-    expect_null(municipios_dpt(0))
-    expect_error(municipios_dpt(0, 1))
-    expect_true(is.data.frame(municipios_dpt(5)))
+    dd <- departamentos(RD$find_file("data/depmun.sqlite"))
+    expect_error(departamentos(1))
+    expect_warning(departamentos("c:/aa.sqlite"))
+    #expect_null(departamentos("c:/aa.sqlite"))
+    expect_true(is.data.frame(dd))
+    expect_true(nrow(dd) == 17)
+
+    dd <- municipios(dbf = RD$find_file("data/depmun.sqlite"))
+    expect_error(municipios(0))
+    expect_true(is.data.frame(dd))
+    dd <- municipios(c(5, 20),
+                     dbf = RD$find_file("data/depmun.sqlite"))
+    expect_true(is.data.frame(dd))
 })

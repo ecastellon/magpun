@@ -285,8 +285,22 @@ sin_tilde <- function(x = character()) {
     x
 }
 
-#' String-estándar
-#' @description Devuelve la secuencia de letras (en minúsculas) en una
+#' Sin diéresis
+#' @description Sustituye letras con diéresis por las equivalentes sin
+#'     diéresis
+#' @param x palabra con o sin diéresis
+#' @export
+sin_dieresis <- function(x = character()) {
+    stopifnot("arg. x inadmisible" = filled_char(x))
+    vv <- c("ü"="u", "Ü"="U")
+    while (any((mm <- regexpr("[Üü]", x)) > -1L)){
+        regmatches(x, mm) <- vv[regmatches(x, mm)]
+    }
+    x
+}
+
+#' String-letras
+#' @description Devuelve la secuencia de letras (en minúsculas) de una
 #'     frase
 #' @param x character
 #' @return character
@@ -294,5 +308,5 @@ sin_tilde <- function(x = character()) {
 sec_letras <- function(x = character()) {
     stopifnot("arg. x inadmisible" = filled_char(x))
     x %<>% gsub("[[:space:]]", "", .) %>%
-        tolower() %>% sin_tilde()
+        tolower() %>% sin_tilde() %>% sin_dieresis()
 }
