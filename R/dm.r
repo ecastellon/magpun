@@ -124,15 +124,18 @@ municipios <- function(dpt = integer(), dbf = character()) {
 #' @export
 es_dm <- function(x, dfm, ccod = "mun", cnom = "municipio") {
     stopifnot("arg. x inválido" = filled_num(x) || filled_char(x),
-              "arg. dfm inválido" = is.data.frame(dfm),
+              "arg. dfm inválido" = is.data.frame(dfm))
+    nc <- names(dfm)
+    stopifnot("arg. ccod inválido" = is.element(ccod, nc),
+              "arg. cnom inválido" = is.element(cnom, nc),
               "arg. dfm inválido" = is.integer(dfm[[ccod]]),
               "arg. dfm inválido" = is.character(dfm[[cnom]]))
 
     if (is.numeric(x)) {
         mm <- dfm[[ccod]]
     } else {
-        mm <- sec_letras(dfm[[cnom]])
-        x  <- sec_letras(x)
+        mm <- solo_letras_ascii(dfm[[cnom]])
+        x  <- solo_letras_ascii(x)
     }
     is.element(x, mm)
 }
@@ -147,7 +150,7 @@ es_dm <- function(x, dfm, ccod = "mun", cnom = "municipio") {
 #' @seealso municipios
 #' @export
 es_municipio <- function(x, dbf = character()) {
-    stopifnot("arg. x inadmisible" = filled_int(x) || filled_char(x),
+    stopifnot("arg. x inadmisible" = filled_num(x) || filled_char(x),
               "arg. dbf inadmisible" = is.character(dbf))
 
     es_dm(x, municipios(dbf))
@@ -167,7 +170,7 @@ es_departamento <- function(x, dbf = character()) {
     stopifnot("arg. x inadmisible" = filled_num(x) || filled_char(x),
               "arg. dbf inadmisible" = is.character(dbf))
 
-    es_dm(x, departamentos(dbf))
+    es_dm(x, departamentos(dbf), "dpt", "departamento")
 }
 
 #' Municipio-código
@@ -186,26 +189,30 @@ es_departamento <- function(x, dbf = character()) {
 #' cod_dm(5, c(5, 20)) #-> c(505, 520)
 #' @export
 #' @author eddy castellón
-cod_dm <- function(dp = integer(), mu = integer(),
-                   dbf = character()) {
+codex_mun <- function(dp = integer(), mu = integer(),
+                      dbf = character()) {
     stopifnot(exprs = {
-        filled_int(dp)
-        filled_int(mu)
-        vapply(dp, num_entre, TRUE, 0, 100, inclusive = FALSE)
-        vapply(mu, num_entre, TRUE, 0, 100, inclusive = FALSE)})
+        filled_num(dp)
+        filled_num(mu)
+        vapply(dp, num_entre, TRUE, 0, 100)
+        vapply(mu, num_entre, TRUE, 0, 100)
+        is.character(dbf) })
 
+    dm <- municipios(dbf = dbf)
+    stopifnot(!is.null(dm))
+    
     nd <- length(dp)
     nm <- length(mu)
     if (nd > nm) {
-        mu <- repeat(mu, length.out = nd)
+        mu <- rep(mu, length.out = nd)
     } else {
         if (nd < nm) {
-            dp <- repeat(dp, length.out = nm)
+            dp <- rep(dp, length.out = nm)
         }
     }
-    mm <- Map(concatenar_int, dp, mu)
+    mm <- mapply(concatenar_int, dp, mu, USE.NAMES = FALSE)
 
-    ii <- !es_municipio(mm, dbf)
+    ii <- !es_dm(mm, dm)
 
     if (any(ii)) {
         warning("\n...", sum(ii), " códigos inválidos")
@@ -213,400 +220,4 @@ cod_dm <- function(dp = integer(), mu = integer(),
     }
     
     mm
-}
-
-## -- quitar; se puede obtener de df_muni
-#' Códigos oficiales
-#' @description la lista de códigos oficiales
-#' @param file nombre del archivo; si no es indicado lo toma de la
-#'     variable de ambiente DEPMUN definida en .Renviron
-#' @param dfmun nombre del data.frame con los datos de los municipios;
-#'     supone que la primera columna lleva los códigos
-#' @seealso df_muni
-#' @export
-#' @author eddy castellón
-cod_municipios <- function(file = character(), dfmun = "dmuni"){
-    x <- df_muni(file, dfmun)
-    as.integer(x[,1])
-}
-
-
-#' Nombres
-#' @description nombre del departamento o municipio
-#' @param cod códigos de los departamentos o municipios
-#' @param x data.frame con los datos de municipios o departamentos
-#' @author eddy castellón
-nombre_cod <- function(cod = integer(), x){
-
-    ii <- ok_int_chr(cod)
-    assert_that(ii || ok_num(cod),
-                msg = "códigos no válidos")
-    if (ii){
-        cod <- as.integer(cod)
-    }
-
-    dm <- vector("character", length(cod))
-    mm <- match(cod, x[,1])
-    ii <- is.na(mm)
-    dm[!ii] <- x[mm[!ii], 2]
-    if (any(ii)){
-        dm[ii] <- NA_character_
-        warning("!! NA códigos no válidos\n")
-    }
-    dm
-}
-
-#' Municipios
-#' @description nombres oficiales de municipios
-#' @param cod códigos de municipios (entero)
-#' @param file nombre del archivo; si no es indicado lo toma de la
-#'     variable de ambiente DEPMUN definida en .Renviron
-#' @param dfmun nombre del data.frame con los datos de los municipios;
-#'     supone que la segunda columna lleva los nombres
-#' @return lista de nombres de municipios indicados en \code{cod}, o la
-#'     de todos si no se indican los códigos
-#' @seealso df_muni
-#' @export
-#' @author eddy castellón
-municipios <- function(cod, file = character(), dfmun = "dmuni"){
-    
-    x <- df_muni(file, dfmun)
-    if (missing(cod)){
-        dm <- as.character(x[,2])
-    } else {
-        dm <- nombre_cod(cod, x)
-    }
-    dm
-}
-
-#' municipios - departamento
-#' @description lista de nombres de municipios en un departamento
-#' @param dpto código (entero) del departamento
-#' @param nombre TRUE devuelve nombres (por omisión), FALSE devuelve
-#'     códigos
-#' @param file nombre del archivo con los códigos y nombres de
-#'     municipios; si no es indicado lo toma de la variable de
-#'     ambiente DEPMUN definida en .Renviron
-#' @param dfmun nombre del data.frame con los datos de los municipios;
-#'     por omisión 'dmuni'
-#' @return lista de nombres o códigos de los municipios de un
-#'     departamento
-#' @seealso municipios, df_muni, file_depmun
-#' @export
-#' @importFrom assertthat assert_that
-#' @author eddy castellón
-municipios_dp <- function(dpto = numeric(), nombre = TRUE,
-                          file = character(), dfmun = "dmuni"){
-    assert_that(ok_num(dpto) && length(dpto) == 1,
-                msg = "sólo un código de departamento\n")
-    
-    x <- df_muni(file, dfmun)
-    
-    cc <- as.integer(x[,1])
-    ii <- (cc %/% 100L) == dpto
-    if (any(ii)){
-        if (nombre){
-            nm <- x[ii, 2]
-        } else {
-            nm <- cc[ii]
-        }
-    } else {
-        message("código de departamento no válido\n")
-        nm <- NA_character_
-    }
-    nm
-}
-
-#' Codigo municipio
-#' @description código compuesto de municipio
-#' @param mu código de municipio (entero)
-#' @param dp código departamento (entero)
-#' @return vector de enteros con el código compuesto de municipio
-#' @author eddy castellón
-cod_muni_ <- function(mu, dp){
-    
-    nm <- length(mu)
-    nd <- length(dp)
-    if (nm != nd){
-        warning("!! vectores de códigos con desigual número\n")
-    }
-
-    x <- as.integer(dp * 100L + mu)
-    ii <- !ok_muni(x)
-    if (any(ii)){
-        x[ii] <- NA_integer_
-        warning("NA código no válido\n")
-    }
-    invisible(x)
-}
-
-#' Codigo municipio
-#' @description genera el código compuesto de municipio a partir del
-#'     código de departamento y código de municipio dentro de
-#'     departamento
-#' @param mu código de municipio
-#' @param dp código departamento
-#' @return código tipo entero, NA si no es municipio válido
-#' @examples cod_muni(5, 5) -> 505
-#' @export
-#' @importFrom assertthat assert_that
-#' @author eddy castellón
-cod_muni <- function(mu = integer(), dp = integer()){
-    ii <- ok_int_chr(mu)
-    jj <- ok_int_chr(dp)
-    assert_that(ii || ok_num(mu), jj || ok_num(dp),
-                msg = "!!! códigos no válidos\n")
-    
-    if (ii){
-        mu <- as.integer(mu)
-    }
-    if (jj){
-        dp <- as.integer(dp)
-    }
-    cod_muni_(mu, dp)
-}
-
-#' Código de municipio
-#' @description función no vectorizada que devuelve código de
-#'     municipio a partir de su nombre
-#' @param nom nombre del municipio
-#' @param dfmun data.frame con códigos-nombres de municipio oficiales;
-#'     la primera columna lleva el código, la segunda el nombre
-#' @return código de municipio si es válido; si no, NA
-#' @author eddy castellón
-cod_muni_nom <- function(nom = character(), dfmun){
-    if (grepl("[[:alpha:]]+", nom)){#al menos una letra
-        nom <- str_sin_tilde(tolower(str_bien_formada(nom)))
-        mm <- pmatch(nom, tolower(as.character(dfmun[,2])),
-                     duplicates.ok = FALSE)
-        cod <- ifelse(is.na(mm), NA_integer_, dfmun[mm, 1])
-    } else {#solo digitos
-        cod <- NA_integer_
-    }
-    cod
-}
-
-#' Codigo municipio
-#' @description devuelve código de municipio a partir de su nombre.
-#' @param nom nombre del municipio
-#' @param file nombre del archivo con los códigos y nombres de
-#'     municipios; si no es indicado lo toma de la variable de
-#'     ambiente DEPMUN definida en .Renviron
-#' @param dfmun nombre del data.frame con los datos de los municipios;
-#'     por omisión 'dmuni'
-#' @return código de municipio si es válido; si no, NA
-#' @seealso df_muni()
-#' @export
-#' @importFrom assertthat assert_that
-#' @author eddy castellón
-cod_muni_nombre <- function(nom = character(), file = character(),
-                            dfmun = "dmuni"){
-    assert_that(ok_chr(nom),
-                msg = "código tipo caracter")
-    x <- df_muni(file, dfmun)
-
-    cod <- vapply(nom, cod_muni_nom, 0, x, USE.NAMES = FALSE)
-    if (anyNA(cod)){
-        warning("hay nombres no válidos\n")
-    }
-    cod
-}
-
-#' código departamento - municipio
-#' @description devuelve el código de departamento que corresponde a
-#'     nombre de municipio
-#' @param nom nombre del municipio
-#' @param file nombre del archivo con los códigos y nombres de
-#'     municipios; si no es indicado lo toma de la variable de
-#'     ambiente DEPMUN definida en .Renviron
-#' @param dfmun nombre del data.frame con los datos de los municipios;
-#'     por omisión 'dmuni'
-#' @export
-#' @author eddy castellón
-cod_dpto_muni <- function(nom = character(), file = character(),
-                          dfmun = "dmuni"){
-    cm <- cod_muni_nombre(nom, file, dfmun)
-    ii <- !is.na(cm)
-    cm[ii] <- cm[ii] %/% 100L
-    cm
-}
-
-#' nombre departamento - municipio
-#' @description devuelve nombre del departamento al que pertenece el
-#'     municipio
-#' @param nom nombre del municipio
-#' @param file nombre del archivo con los códigos y nombres de
-#'     municipios; si no es indicado lo toma de la variable de
-#'     ambiente DEPMUN definida en .Renviron
-#' @param dfmun nombre del data.frame con los datos de los municipios;
-#'     por omisión 'dmuni'
-#' @param dfdpt nombre del data.frame con los datos de los
-#'     departamentos; por omisión 'ddpto'
-#' @author eddy castellón
-nom_dpto_muni <- function(nom, file = character(),
-                          dfmun = "dmuni", dfdpt = "ddpto"){
-    x <- cod_dpto_muni(nom, file, dfmun)
-    ii <- !is.na(x)
-    nd <- vector("character", length(x))
-    nd[ii] <- departamentos(x[ii], file, dfdpt)
-    if (any(!ii)){
-        nd[!ii] <- NA_character_
-    }
-    nd
-}
-
-#' Municipio válido
-#' @description valida código de municipio
-#' @param cod código extendido (departamento-municipio), caracter o
-#'     numero
-#' @param file nombre del archivo con data.frame del municipio; si no
-#'     es indicado, se lee de la variable de ambiente DEPMUN definida
-#'     en .Renviron
-#' @param dfmun nombre del data.frame con los datos de los municipios;
-#'     por omisión 'dmuni'
-#' @return vector lógico con igual número de elementos que cod
-#' @export
-#' @importFrom assertthat assert_that
-#' @author eddy castellón
-ok_muni <- function(cod = integer(), file = character(),
-                    dfmun = "dmuni"){
-    ii <- ok_int_chr(cod)
-    assert_that(ii || ok_num(cod), msg = "código tipo entero")
-    if (ii){
-        cod <- as.integer(cod)
-    }
-    cod %in% cod_municipios(file, dfmun)
-}
-
-## --- departamentos ---
-
-#' Departamentos
-#' @description códigos y nombres de los departamentos
-#' @param file character: nombre del archivo con data.frame
-#'     departamentos; si se omite, intenta obtener el nombre de la
-#'     variable de ambiente DEPMUN definida en .Renviron
-#' @param dfdpt character: nombre del data.frame con los datos de los
-#'     departamentos; por omisión 'ddpto'
-#' @return data.frame; primera columna el código oficial, y la segunda
-#'     el nombre
-#' @export
-#' @author eddy castellón
-df_dpto <- function(file = character(), dfdpt = "ddpto"){
-    
-    assert_that(length(file) <= 1,
-                msg = "sólo nombre del archivo\n")
-    fdm <- file_depmun(file)
-    invisible(get_dff_c(dfdpt, fdm))
-}
-
-#' Codigos departamentos
-#' @description lista de códigos de departamento
-#' @param file nombre del archivo con data.frame departamentos; si no
-#'     es indicado se lee de la variable de ambiente DEPMUN definida
-#'     en .Renviron
-#' @param dfdpt nombre del data.frame con los datos de los
-#'     departamentos; por omisión 'ddpto'
-#' @export
-#' @author eddy castellón
-cod_departamentos <- function(file, dfdpt = "ddpto"){
-    x <- df_dpto(file, dfdpt)
-    as.integer(x[,1])
-}
-
-#' Departamentos
-#' @description lista de departamentos correspondientes a los códigos
-#'     o lista completa si estos no se indican
-#' @param file nombre del archivo con data.frame departamentos; si no
-#'     es indicado se lee de la variable de ambiente DEPMUN definida
-#'     en .Renviron
-#' @param dfdpt nombre del data.frame con los datos de los
-#'     departamentos; por omisión 'ddpto'
-#' @return lista de nombres de departamentos indicados en \code{cod},
-#'     o la de todos si no se indican los códigos
-#' @seealso df_dpto
-#' @export
-#' @author eddy castellón
-departamentos <- function(cod, file = character(),
-                         dfdpt = "ddpto"){
-    x <- df_dpto(file, dfdpt)
-
-    if (missing(cod)){
-        dm <- as.character(x[,2])
-    } else {
-        dm <- nombre_cod(cod, x)
-    }
-    dm
-}
-
-#' código departamento
-#' @description devuelve código del departamento que corresponde al
-#'     nombre del departamento
-#' @param nom nombre del departamento
-#' @param file nombre del archivo con los data.frame
-#' @param dfdpt nombre del data.frame con datos de departamentos; por
-#'     omisión 'ddpto'
-#' @author eddy castellón
-cod_dpto_nom <- function(nom, dfdpt = "ddpto"){
-
-    if (grepl("[[:alpha:]]+", nom)){#al menos una letra
-        nom <- str_sin_tilde(tolower(str_bien_formada(nom)))
-        
-        mm <- pmatch(nom, tolower(dfdpt[,2]),
-                     duplicates.ok = FALSE)
-        if (is.na(mm)){
-            cod <- NA_integer_
-        } else {
-            cod <- dfdpt[mm, 1]
-        }
-    } else {#solo digitos
-        cod <- NA_integer_
-    }
-    cod
-}
-
-#' Código departamento
-#' @description devuelve código de departamento a partir del nombre
-#'     del departamento
-#' @param nom nombre del municipio o nombre del departamento
-#' @param file nombre del archivo con data.frame del municipio; si no
-#'     es indicado, se lee de la variable de ambiente DEPMUN definida
-#'     en .Renviron
-#' @param dfdpt nombre del data.frame con los datos de los
-#'     departamentos; por omisión 'ddpto'
-#' @return código de departamento si es código válido; si no, NA
-#' @export
-#' @importFrom assertthat assert_that
-#' @author eddy castellón
-cod_dpto_nombre <- function(nom = character(), file = character(),
-                            dfdpt = "ddpto"){
-
-    assert_that(ok_chr(nom),
-                msg = "código tipo caracter o entero")
-
-    dd <- df_dpto(file, dfdpt)
-    
-    cod <- vapply(nom, cod_dpto_nom, 0, dd, USE.NAMES = FALSE)
-    if (anyNA(cod)){
-        warning("hay nombres no válidos\n")
-    }
-    cod
-}
-
-#' Departamento válido
-#' @description valida código de departamento
-#' @param cod código de departamento
-#' @param file donde están los códigos oficiales. Si se omite,
-#'     lo lee desde .Renviron
-#' @export
-#' @importFrom assertthat assert_that
-#' @author eddy castellón
-ok_dpto <- function(cod = integer(), file = character(),
-                    dfdpt = "ddpto"){
-    ii <- ok_int_chr(cod)
-    assert_that(ii || ok_num(cod), msg = "código tipo entero")
-
-    if (ii){
-        cod <- as.integer(cod)
-    }
-    cod %in% cod_departamentos(file, dfdpt)
 }

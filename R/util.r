@@ -54,18 +54,23 @@ filled_int <- function(x) {
 }
 
 #' Número-entre
-#' @description El número está entre los límites?
+#' @description Comprueba si un número está entre los límites de un
+#'     intervalo
 #' @param x numeric
 #' @param x1 numeric: límite inferior
 #' @param x2 numeric: límite superior
-#' @param inclusive logical: incluyendo igualdad con uno de los
-#'     límites?; TRUE por omisión
+#' @param inclusive logical: con igualdad a uno de los límites?; FALSE
+#'     por omisión
 #' @return logical
 #' @export
-num_entre <- function(x, x1, x2, inclusive = TRUE) {
-    stopifnot("args. inválido" = filled_num(x) &&
-                  filled_num(x1) && filled_num(x2) &&
-                  length(x) == length(x1) && length(x) == length(x2))
+num_entre <- function(x, x1 = numeric(), x2 = numeric(),
+                      inclusive = FALSE) {
+    stopifnot("arg. x inválido" = filled_num(x),
+              "arg. x1 inválido" = filled_num(x1),
+              "arg. x2 inválido" = filled_num(x2),
+              "args. x, x1 incomp" = length(x) == length(x1),
+              "args. x, x2 incomp" = length(x) == length(x2))
+    
     tf <- x > x1 & x < x2
     if (inclusive) {
         tf  <- tf | x == x1 | x == x2
@@ -86,11 +91,16 @@ num_entre <- function(x, x1, x2, inclusive = TRUE) {
 #' concatenar_int(2, 3) -> 203
 #' concatenar_int(2, 3, 3) -> 2003
 concatenar_int <- function(x, y, desplazar = 2L) {
-    stopifnot("args. inválidos" = filled_int(x) && filled_int(y) &&
-              filled_int(desplazar) && desplazar > 0)
-    ##desplazar > 0; x e y enteros
-    x * 10 ^ desplazar + y
+    stopifnot(exprs = {
+        filled_num(x)
+        filled_num(y)
+        filled_num(desplazar) && desplazar > 0})
+
+    desplazar <- as.integer(desplazar)
+    as.integer(x) * (10 ^ desplazar) + as.integer(y)
 }
+
+## -- archivos --
 
 #' path maybe
 #' @description test string begins with one o more alphanumeric
@@ -125,6 +135,35 @@ ok_fname <- function(x = character()) {
         }
     }
     return(ok)
+}
+
+#' Archivos
+#' @description Lista de los archivos cuyo nombre empieza con ciertos
+#' caracteres y termina con cierta extensión
+#' @param pre character: prefijo de los nombres; por omisión "*"
+#' @param ext character: extensión; por omisión, "*"
+#' @param rut character: ruta donde buscar; si omitido, la ruta actual
+#' @return character o NULL
+#' @examples
+#' list_ar("ab", rut = "c:/xx") #-> c("abc.r", "abu.doc")
+list_ar <- function(pre = character(), ext = character(),
+                    rut = getwd()) {
+    stopifnot(exprs = {
+        is.character(pre)
+        is.character(ext)
+        is.character(rut)
+    })
+
+    if (is_vacuo(pre)) pre <- ""
+    if (is_vacuo(ext)){
+        ext <- "*"
+    } else {
+        ext <- sub("^\\.", "", ext)
+    }
+    
+    ss <- paste0("^", pre, ".*\\.", ext, "$")
+
+    list.files(rut, ss)
 }
 
 ## Character -> Character
@@ -244,6 +283,16 @@ try_load <- function(x, env = parent.frame()) {
 
 ## --- string ---
 
+#' Remover espacios
+#' @description Remueve todos lo espacios, final de línea o tabulador,
+#'     de una frase
+#' @param x frase
+#' @export
+sin_sp <- function(x = character()) {
+    stopifnot("arg. x inadmisible" = filled_char(x))
+    gsub("[[:space:]]+", "", x)
+}
+
 #' Poda espacios
 #' @description Elimina los espacios antes y después de una frase
 #' @param x frase
@@ -262,8 +311,10 @@ podar_str <- function(x = character()) {
 #' @description Remplaza dos o más espacios (final de línea o
 #'     tabulador) consecutivos por un espacio y poda los extremos
 #' @param x frase
+#' @examples
+#' ajustar_sp("ja   ja ja  ") #-> "ja ja ja"
 #' @export
-ajustar_sp <- function(x = character()) {
+regular_sp <- function(x = character()) {
     stopifnot("arg. x inadmisible" = filled_char(x))
     podar_str(gsub("[[:space:]]+", " ", x))
 }
@@ -299,14 +350,16 @@ sin_dieresis <- function(x = character()) {
     x
 }
 
-#' String-letras
-#' @description Devuelve la secuencia de letras (en minúsculas) de una
-#'     frase
+#' String-estándar
+#' @description Devuelve la secuencia de letras minúsculas, sin
+#'     acentos o diéresis, de una frase
 #' @param x character
 #' @return character
 #' @keywords internal
-sec_letras <- function(x = character()) {
+#' @examples
+#' to_sec_ascii("  éEmn üs") #-> "eemnus"
+solo_letras_ascii <- function(x = character()) {
     stopifnot("arg. x inadmisible" = filled_char(x))
-    x %<>% gsub("[[:space:]]", "", .) %>%
-        tolower() %>% sin_tilde() %>% sin_dieresis()
+    tolower(x) %>% sin_sp() %>%
+        sin_tilde() %>% sin_dieresis()
 }

@@ -3,42 +3,15 @@
 ## v.0.0 202011
 
 #' Archivos-.shp
-#' @description devuelve lista de los archivos con extensión shp que
-#' hay en un directorio
-#' @param dir character: el directorio
+#' @description Devuelve lista de los archivos con extensión shp y un
+#'     prefijo determinado
+#' @param pre character: letras iniciales (prefijo) del nombre
+#' @param rut character: el directorio; por omisión, el directorio de
+#'     trabajo
 #' @return character
 #' @keywords internal
-shp_list <- function(dir = character()) {
-    if (filled_char(dir)) {
-        dir <- list.files(dir, "*.\\.shp$")
-    }
-    dir
-}
-
-## Character Character -> Character
-## prop. devuelve nombre del archivo shape (sin extensión)
-## de la cobertura del departamento dpt que se
-## encuentra en la ruta dsn
-## shp_dpt("masaya", "upms")
-
-#' Shp-departamento
-#' @description devuelve el nombre del archivo shape correspondiente a
-#'     un departamento. Asume que el nombre del archivo inicia con el
-#'     nombre o las primeras letras del nombre del departamento.
-#' @param dpt character: nombre del departamento
-#' @param dsn ruta de acceso
-#' @return nombre sin extensión o character(0)
-#' @export
-shp_name <- function(dpt = character(), dsn = character()){
-    sh <- list.files(dsn, paste0("^", dpt, ".*\\.shp$"))
-    if (filled_char(sh)) {
-        sh <- sh[1] #el primero si más de uno
-        cat("shape:", sh, "!!!\n")
-        sh <- sin_ext(basename(sh))
-    } else {
-        warning("archivo no existe !!", call. = FALSE)
-    }
-    sh
+shp_list <- function(pre = character(), rut = character()) {
+    list_ar(pre, ext = "shp", rut)
 }
 
 ## Character Character -> sf
@@ -49,7 +22,8 @@ shp_name <- function(dpt = character(), dsn = character()){
 #' @param shp character: ruta del archivo shape
 #' @return objeto de clase "simple feature" o NULL
 #' @export
-shp_read <- function(shp = character()){
+shp_read <- function(shp = character()) {
+    stopifnot("arg. shp inadmisible" = filled_char(shp))
     sh <- tryCatch(sf::read_sf(shp),
                    error = function(e){
                        message("\n... error lectura !!!")
@@ -59,29 +33,41 @@ shp_read <- function(shp = character()){
 }
 
 #' Bloques-dpt
-#' @description extrae de la cobertura de bloques de muestreo del
+#' @description Extrae de la cobertura de bloques de muestreo del
 #'     país, la de un departamento específico
-#' @param dpt character o integer: nombre o código del departamento
+#' @details Supone que la cobertura de bloques contiene el atributo
+#'     que especifica el departamento al cual está asignado cada
+#'     bloque
+#' @param cod integer: código del departamento
 #' @param cob character: ruta a cobertura de bloques del país
-#' @return objeto clase "sf" de la cobertura de bloques del
-#'     departamento
+#' @param dpt character: atributo que especifica el departamento; por
+#'     omisión, "dpto"
+#' @return objeto clase "sf"
 #' @export
-shp_blo_dpt <- function(dpt, cob){
+shp_blo_dpt <- function(cod = integer(), cob = character(),
+                        dpt = "dpto") {
+    stopifnot("arg. cod inadmisible" = filled_num(cod),
+              "arg. cob inadmisible" = filled_char(cob),
+              "arg. dpt inadmisible" = filled_char(dpt))
+    
     cb <- shp_read(cob)
     if (!is.null(cb)) {
-        
+        if (is.element(dpt, names(cb))) {
+            ii <- cb[[dpt]] == cod
+            if (any(ii)) {
+                cb <- cb[ii, ]
+            } else {
+                cb <- NULL
+                warning("\n... departamento ", cod,
+                        "no existe en cobertura")
+            }
+        } else {
+            warning("\n... falta atributo ", dpt)
+            cb <- NULL
+        }
     }
 
-    return(cb)
-        
-    }
-    if (is.character(dpt)){
-        dpt <- cod_dpto_nombre(dpt)
-    }
-    assert_that(is.numeric(dpt),
-                dpt %in% cob@data$dpto,
-                msg = "revisar nombre del departamento")
-    invisible(cob[cob@data$dpto == dpt,])
+    invisible(cb)
 }
 
 #' Shape-save

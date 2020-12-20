@@ -44,3 +44,28 @@ test_that("municipio-dpt",
                      dbf = RD$find_file("data/depmun.sqlite"))
     expect_true(is.data.frame(dd))
 })
+
+test_that("validar dpt-mun",
+{
+    aa <- departamentos(RD$find_file("data/depmun.sqlite"))
+    expect_true(es_dm(5, aa, "dpt", "departamento"))
+    expect_true(es_dm("nueva segovia", aa, ccod = "dpt",
+                      cnom = "departamento"))
+    expect_false(es_dm("jalapa", aa, ccod = "dpt",
+                       cnom = "departamento"))
+    expect_false(es_dm("", aa, ccod = "dpt",
+                       cnom = "departamento"))
+    expect_error(es_dm("nueva segovia", aa, ccod = "dpt"))
+    expect_error(es_dm("nueva segovia", aa, cnom = "departamento"))
+})
+
+test_that("código-municipio",{
+    expect_equal(codex_mun(5, 5), 505)
+    expect_equal(codex_mun(c(5, 5), c(5, 50)), c(505, 550))
+    expect_equal(codex_mun(c(5, 5), c(5, 90)), c(505, NA))
+    expect_equal(codex_mun(5, c(5, 10)), c(505, 510))
+    expect_error(codex_mun(0, c(5, 10)))
+    expect_warning(codex_mun(82, c(5, 10)))
+    aa <- codex_mun(82, c(5, 10))
+    expect_true(all(is.na(aa)))
+})
