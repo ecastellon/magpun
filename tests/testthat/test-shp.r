@@ -1,4 +1,4 @@
-## -*- encoding: utf-8 -*-
+## -*- coding: utf-8 -*-
 ## test_file cambia dir de trabajo
 context("crud shape")
 
@@ -31,4 +31,21 @@ test_that("bloq dpt",
     expect_s3_class(shp_blo_dpt(50, ss), "sf")
     expect_warning(shp_blo_dpt(90, ss))
     expect_warning(shp_blo_dpt(90, ss, dpt = "bb"))
+})
+
+test_that("save shp",
+{
+    sh <- shp_read(system.file("shape/nc.shp", package="sf"))
+    expect_error(shp_save(sh))
+    expect_error(shp_save(shp = RD$find_file("data/nc.shp")))
+    expect_warning(shp_save(sh, RD$find_file("xx/nc.shp")))
+    expect_true(shp_save(sh, RD$find_file("data/nc.shp")))
+})
+
+test_that("shp data",
+{
+    aa <- shp_data_read(RD$find_file("data/nc.shp"))
+    expect_s3_class(aa, "data.frame")
+    expect_true(shp_data_save(aa, RD$find_file("data/nc.shp")))
+    expect_error(shp_data_save(aa, RD$find_file("data/nu.shp")))
 })

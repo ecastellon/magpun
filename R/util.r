@@ -100,6 +100,38 @@ concatenar_int <- function(x, y, desplazar = 2L) {
     as.integer(x) * (10 ^ desplazar) + as.integer(y)
 }
 
+#' Id's
+#' @description Construye "n" palabras a partir de un prefijo seguido
+#'     de un número suficiente de dígitos que garantizan que cada
+#'     palabra es única
+#' @param x character o numeric: prefijo
+#' @param n integer: número de palabras
+#' @param mxn integer: número máximo de caracteres de la palabra; por
+#'     omisión, 5
+#' @return character
+#' @export
+n_ids <- function(x, n = integer(), mxn = 5L) {
+    stopifnot("arg. x inadmisible" = filled_num(x) || filled_char(x),
+              "arg. n inadmisible" = filled_num(n) && n > 0,
+              "arg. mxn inadmisible" = filled_num(mxn))
+    
+    ss <- as.character(x)
+    n1 <- nchar(ss)
+    n2 <- nchar(as.character(n))
+
+    nn <- n1 + n2
+    if (mxn < nn) {
+        message("... número de caracteres ajustado a ", nn)
+    } else {
+        if (mxn > n1 + n2) {
+            n2 <- mxn - n1
+        }
+    }
+    
+    fmt <- paste0("%s", "%0", n2, "i")
+    sprintf(fmt, ss, seq_len(n))
+}
+
 ## -- archivos --
 
 #' path maybe
