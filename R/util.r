@@ -53,6 +53,14 @@ filled_int <- function(x) {
     is.integer(x) && length(x)
 }
 
+#' logical type
+#' @description vector is of logical type and has elements?
+#' @param x vector
+#' @return logical
+filled_log <- function(x) {
+    is.logical(x) && length(x)
+}
+
 #' Número-entre
 #' @description Comprueba si un número está entre los límites de un
 #'     intervalo
@@ -83,13 +91,13 @@ num_entre <- function(x, x1 = numeric(), x2 = numeric(),
 #' @description Concatenar enteros
 #' @param x integer: entero al inicio
 #' @param y integer: entero al final
-#' @param desplaza integer: número de posiciones decimales que es
-#'     desplazado el primer número
+#' @param desplaza integer: número de posiciones decimales
+#'     "a la izquierda" que es desplazado el primer número
 #' @return integer
 #' @export
 #' @examples
-#' concatenar_int(2, 3) -> 203
-#' concatenar_int(2, 3, 3) -> 2003
+#' concatenar_int(2, 3) #-> 203
+#' concatenar_int(2, 3, 3) #-> 2003
 concatenar_int <- function(x, y, desplazar = 2L) {
     stopifnot(exprs = {
         filled_num(x)
@@ -159,13 +167,18 @@ is_path <- function(x) {
 #' @return logical
 #' @author eddy castellón
 ok_fname <- function(x = character()) {
-    ok <- file.exists(x)
-    if (!ok) {
-        ok <- file.create(x)
-        if (ok) {
-            unlink(x)
+    ok <- filled_char(x)
+
+    if (ok) {
+        ok <- file.exists(x)
+        if (!ok) {
+            ok <- file.create(x)
+            if (ok) {
+                unlink(x)
+            }
         }
     }
+    
     return(ok)
 }
 
@@ -394,4 +407,42 @@ solo_letras_ascii <- function(x = character()) {
     stopifnot("arg. x inadmisible" = filled_char(x))
     tolower(x) %>% sin_sp() %>%
         sin_tilde() %>% sin_dieresis()
+}
+
+##--- misc ---
+
+#' Grupos-azar
+#' @description Crea subgrupos aleatorios a lo interno de grupos de
+#'     datos replicados de una variable
+#' @param x character o numeric: variable con grupos de datos
+#' @param nsub numeric: número de subgrupos
+#' @param sistematico logical: subgrupos formados muestra sistemática
+#'     (TRUE por omisión) o completamente al azar (FALSE)
+#' @return integer
+#' @export
+#' @examples
+#' aa <- data.frame(x = 1:12, y = rep(1:2, each = 6))
+#' bb <- subgrupos_azar(aa$y, nsub = 3)
+#' #-> c(2, 3, 1, 2, 3, 1, 3, 2, 1, 3, 2, 1)
+subgrupos_azar <- function(x = integer(), nsub = 0L,
+                          sistematico = TRUE) {
+    stopifnot(
+        "arg. x inadmisible" = filled_num(x) || filled_char(x),
+        "arg. nsub inadmisible" = filled_num(nsub) &&
+            length(nsub) == 1 && nsub > 1)
+
+    nsub <- as.integer(nsub)
+    sg <- integer(length(x))
+    gr <- unique(x)
+
+    for (kk in gr) {
+        ii <- x == kk
+        ## muestra sistemática
+        mu <- rep_len(sample.int(nsub), length.out = sum(ii))
+        if (!sistematico) {
+            mu <- sample(mu)
+        }
+        sg[which(ii)] <- mu
+    }
+    sg
 }

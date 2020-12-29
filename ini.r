@@ -1,4 +1,4 @@
-## -*- encoding:utf-8 -*-
+## -*- coding:utf-8 -*-
 library(devtools)
 library(testthat)
 setwd("c:/eddy/code/r/magpun")
