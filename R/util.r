@@ -161,11 +161,12 @@ is_path <- function(x) {
 
 #' file name
 #' @description check file's name is valid using the function
-#' \code{file.create} of base R. If any directory in the path chain
-#' doesn't exists, the file's name is invalid.
+#'     \code{file.create} of base R. If any directory in the path
+#'     chain doesn't exists, the file's name is invalid.
 #' @param x character; the file's name
 #' @return logical
 #' @author eddy castellón
+#' @keywords internal
 ok_fname <- function(x = character()) {
     ok <- filled_char(x)
 
@@ -184,7 +185,7 @@ ok_fname <- function(x = character()) {
 
 #' Archivos
 #' @description Lista de los archivos cuyo nombre empieza con ciertos
-#' caracteres y termina con cierta extensión
+#'     caracteres y termina con cierta extensión
 #' @param pre character: prefijo de los nombres; por omisión "*"
 #' @param ext character: extensión; por omisión, "*"
 #' @param rut character: ruta donde buscar; si omitido, la ruta actual
