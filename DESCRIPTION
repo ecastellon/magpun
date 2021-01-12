@@ -1,18 +1,24 @@
+-*- coding: utf-8 -*-
 Package: magpun
-Title: What the Package Does (One Line, Title Case)
+Title: Selección muestra puntos MAG
 Version: 0.0.0.9000
 Authors@R: 
-    person(given = "First",
-           family = "Last",
+    person(given = "Eddy",
+           family = "Castellón",
            role = c("aut", "cre"),
-           email = "first.last@example.com",
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+           email = "eddy.castellon@mag.gob.ni",
+           comment = "")
+Description: El propósito de estas funciones es ayudar en el proceso
+             de selección de la muestra de puntos que se practica en el MAG.
+License: MIT
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.0
 Suggests: 
     testthat
+Depends:
+        magrittr
+Imports:
+        sf,
+        foobj
