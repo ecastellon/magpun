@@ -107,7 +107,10 @@ shp_data_read <- function(x = character()) {
     stopifnot("arg. x inadmisible" = filled_char(x) && nzchar(x),
               "archivo no existe" = file.exists(x))
 
-    dt <- try(foreign::read.dbf(x, as.is = TRUE), silent = TRUE)
+    ss <- basename(x) %>% rm_ext() %>% paste0(".dbf") %>%
+        file.path(dirname(x), .)
+
+    dt <- try(foreign::read.dbf(ss, as.is = TRUE), silent = TRUE)
 
     if (inherits(dt, "try-error")) {
         warning("\n... error de lectura !!!")
@@ -121,7 +124,7 @@ shp_data_read <- function(x = character()) {
 #' @description Guarda data frame como tabla de atributos de un shape
 #'     que ya existe
 #' @param x el data.frame
-#' @param shp nombre del archivo con extensión shape
+#' @param shp nombre del archivo con extensión "shp"
 #' @return logical
 #' @export
 #' @examples

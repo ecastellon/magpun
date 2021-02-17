@@ -228,6 +228,17 @@ rm_ext <- function(file){
     sub("\\..*$", "", file)
 }
 
+#' File extension
+#' @description Devuelve la extensión de un archivo
+#' @param x character: nombre del archivo
+#' @return character
+#' @examples
+#' get_ext("c:/xdir/xfile.shp") #-> "shp"
+get_ext <- function(x) {
+    sub("(.+)(\\.[[:alpha:]]+$)","\\2", x) %>%
+        substring(2)
+}
+
 #' check call
 #' @description check arguments in a call
 #' @param x arguments
