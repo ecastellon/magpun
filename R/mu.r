@@ -98,10 +98,10 @@ muestra_puntos <- function(x, npun = "puntos", cols = character(),
             x <- x[orden,]
         }
     }
-    
-    mp <- sf::st_sample(x, npun, type = "random", exact = TRUE,
-                        by_polygon = TRUE)
-    
+
+    mp <- Map(sf::st_sample, x$geometry, x$puntos)
+    ##mp <- sf::st_sample(x, npun)
+
     id <- data.frame(idpt = n_ids(pref, sum(npun), mxch),
                      stringsAsFactors = FALSE)
 
