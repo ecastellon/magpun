@@ -9,7 +9,7 @@
 #' @param rut character: el directorio; por omisión, el directorio de
 #'     trabajo
 #' @return character
-#' @keywords internal
+#' @export
 shp_list <- function(pre = character(), rut = character()) {
     list_ar(pre, ext = "shp", rut)
 }
