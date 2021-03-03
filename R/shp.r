@@ -14,9 +14,6 @@ shp_list <- function(pre = character(), rut = character()) {
     list_ar(pre, ext = "shp", rut)
 }
 
-## Character Character -> sf
-## prop. leer file shape sh en la ruta dsn
-
 #' Leer-shp
 #' @description lee el archivo de una cobertura shape
 #' @param shp character: ruta del archivo shape
@@ -33,8 +30,8 @@ shp_read <- function(shp = character()) {
 }
 
 #' Bloques-dpt
-#' @description Extrae de la cobertura de bloques de muestreo del
-#'     país, la de un departamento específico
+#' @description Extrae la cobertura de un departamento específico, de
+#'     la cobertura de bloques de muestreo del país
 #' @details Supone que la cobertura de bloques contiene el atributo
 #'     que especifica el departamento al cual está asignado cada
 #'     bloque
@@ -168,7 +165,7 @@ shp_atributos <- function(x = character()) {
     na
 }
 
-#' Replicated points
+#' Distribuir en réplicas
 #' @description crear indicador de réplica (submuestra)
 #' @param x data.frame con los datos de la cobertura de puntos
 #' @param nrep número de réplicas
