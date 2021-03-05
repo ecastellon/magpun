@@ -211,8 +211,6 @@ fx <- file.path("c:/encuestas/marco/bloquespuntos/sel2021", "tst.kml")
 xm <- read_xml(fx)
 
 
-
-
 length(xm)
 length(xml_children(xm))
 xml_type(xm)
@@ -221,13 +219,52 @@ xml_structure(xm)
 z <- xml_root(xm)
 xml_length(z)
 ## [1] 1
+length(z)
+##> [1] 2
 xml_attr(xml_children(z), "id")
 ##> [1] "root_doc"
 
+u <- xml_child(z, 1) %>% xml_children() %>% extract(2)
+xml_length(u)
+##> + > [1] 669
+length(u)
+##[1] 1
+
+xml_name(xml_child(u, 1))
+##> [1] "name"
+xml_path(xml_child(u, 1))
+##> [1] "/*/*/*[2]/*[1]"
+xml_name(xml_child(u, 4))
+##> [1] "Placemark"
+xml_path(xml_child(u, 4))
+##> + > [1] "/*/*/*[2]/*[4]"
+
+xml_contents(xml_child(u, 4))
+
+t <- xml_find_all(xml_child(u, 4), "*[2]/*[1]")
+xml_length(t)
+length(t)
+## coordenadas
+## xml_contents(t)
+
+xml_children(u) %>% length()
+xml_contents(u[[1]])
 
 y <- xml_children(z)
 xml_length(y)
 ## > [1] 2
+
+xml_child(y, 1) %>% xml_name()
+## "Schema"
+xml_child(y, 2) %>% xml_name()
+## "Folder"
+
+xml_attr(xml_children(y)[[1]], "id")
+## [1] "tst"
+
+xml_attrs(xml_children(y)[[1]])
+## >  name    id 
+## "tst" "tst" 
 
 xml_contents(xml_children(y)[[1]])
 ## > {xml_nodeset (2)}
@@ -238,6 +275,39 @@ xml_child(xml_children(y)[[1]], 1)
 ## > {xml_node}
 ## <SimpleField name="upm" type="string">
 
+w <- xml_children(y)[[2]]
+xml_length(w)
+## [1] 669
+length(w)
+##> [1] 2
+
+xml_child(w, 1) %>% xml_name()
+## [1] "name"
+xml_child(w, 1) %>% xml_contents()
+## > {xml_nodeset (1)}
+## [1] tst
+
+xml_child(w, 2) %>% xml_name()
+## [1] "name"
+
+xml_child(w, 2) %>% xml_contents()
+## {xml_nodeset (2)}
+## <ExtendedData>\n  <SchemaData schemaUrl="#tst">\n    <SimpleData name="up ...
+## <Point>\n  <coordinates>-86.6682069572039,13.4442752797853</coordinates>\ ...
+
+
+v <- xml_child(w, 2)
+xml_length(v)
+## > + [1] 2
+xml_child(w, 2) %>% xml_name()
+## > [1] "Placemark"
+
+u <- xml_find_all(z, "/Folder")
+xml_length(u)
+length(u)
+u
+
+xml_length(z)
 w <- xml_find_all(z, ".//Schema")
 xml_length(w)
 
