@@ -21,4 +21,5 @@ Depends:
         magrittr
 Imports:
         sf,
-        foobj
+        foobj,
+        magmun

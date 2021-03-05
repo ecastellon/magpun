@@ -20,6 +20,15 @@ is_empty <- function(x) {
     length(x) == 0
 }
 
+#' Escalar
+#' @description Es vector con un elemento?
+#' @param x vector
+#' @return logical
+#' @keywords internal
+is_scalar <- function(x) {
+    length(x) == 1L
+}
+
 #' length
 #' @description vector has length greater than zero?
 #' @param x vector
@@ -51,14 +60,6 @@ filled_num <- function(x) {
 #' @return logical
 filled_int <- function(x) {
     is.integer(x) && length(x)
-}
-
-#' logical type
-#' @description vector is of logical type and has elements?
-#' @param x vector
-#' @return logical
-filled_log <- function(x) {
-    is.logical(x) && length(x)
 }
 
 #' Número-entre
@@ -424,12 +425,18 @@ solo_letras_ascii <- function(x = character()) {
 ##--- misc ---
 
 #' Grupos-azar
-#' @description Crea subgrupos aleatorios a lo interno de grupos de
-#'     datos replicados de una variable
+#' @description Crea grupos escogidos al azar, dentro de otros grupos
+#' @details Una variable que tiene datos repetidos con los que se
+#'     identifican grupos de datos (como pueden ser los municipios de
+#'     un departamento o el estrato al que están asignadas las
+#'     unidades de muestreo) es dividida por esos grupos (por
+#'     municipio, por estrato, etc.), y dentro de cada uno de ellos se
+#'     construyen subgrupos de manera aleatoria.
 #' @param x character o numeric: variable con grupos de datos
 #' @param nsub numeric: número de subgrupos
-#' @param sistematico logical: subgrupos formados muestra sistemática
-#'     (TRUE por omisión) o completamente al azar (FALSE)
+#' @param sistematico logical: subgrupos formados por selección
+#'     sistemática (\code{TRUE} por omisión) o completamente al azar
+#'     (\code{FALSE})
 #' @return integer
 #' @export
 #' @examples

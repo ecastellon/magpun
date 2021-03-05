@@ -5,8 +5,8 @@
 ## (municipal) y sus coordenadas, superficie, y otra de interés.
 
 #' Departamento-municipio
-#' @description Conectar con la base de datos de
-#'     departamentos-municipios
+#' @description Conectar con la base de datos de departamentos y
+#'     municipios
 #' @details Los nombres y códigos de los departamentos (dpt,
 #'     departamento) y municipios (mun, municipio) están almacenados
 #'     en una base de datos SQLite. Los códigos son enteros que
@@ -37,7 +37,7 @@ con_dm <- function(x = character()) {
     invisible(cn)
 }
 
-#' Base datos
+#' Consultas
 #' @description Consulta la base de datos de municipios
 #' @param qry character: expresión de consulta SQL
 #' @param dbf character: ruta de acceso a la base de datos; por
@@ -65,7 +65,8 @@ qry_dm <- function(qry = character(), dbf = character()) {
 #' @param file character: ruta de la base de datos; si se omite, se
 #'     obtiene de la variable-ambiente DBDEPMUN
 #' @return data.frame o NULL
-#'
+#' @examples
+#' departamentos()
 #' @export
 #' @author eddy castellón
 departamentos <- function(file = character()) {
@@ -86,7 +87,8 @@ departamentos <- function(file = character()) {
 #' @param dbf character: ruta de la base de datos; si se omite, se
 #'     obtiene de la variable-ambiente DBDEPMUN
 #' @return data.frame o NULL
-#'
+#' @examples
+#' municipios()
 #' @export
 #' @author eddy castellón
 municipios <- function(dpt = integer(), dbf = character()) {
@@ -110,8 +112,8 @@ municipios <- function(dpt = integer(), dbf = character()) {
 }
 
 #' Validar-Dpto-Muni
-#' @description El código o nombre del departamento o municipio está
-#'     en la base de datos?
+#' @description Comprueba si el código o nombre del departamento o
+#'     municipio está registrado en la base de datos
 #' @param x código (numeric) o nombre (character)
 #' @param dfm data.frame con el código (integer) y el nombre
 #'     (character) del departamento o municipio
@@ -121,7 +123,11 @@ municipios <- function(dpt = integer(), dbf = character()) {
 #'     nombres de los departamentos o municipios; por omisión
 #'     "municipio"
 #' @return logical
-#' @export
+#' @examples
+#' mun <- municipios()
+#' es_dm(505, mun)
+#' es_dm("jalapa", mun, cnom = "municipio")
+#' @keywords internal
 es_dm <- function(x, dfm, ccod = "mun", cnom = "municipio") {
     stopifnot("arg. x inválido" = filled_num(x) || filled_char(x),
               "arg. dfm inválido" = is.data.frame(dfm))
@@ -147,7 +153,7 @@ es_dm <- function(x, dfm, ccod = "mun", cnom = "municipio") {
 #' @param dbf character: ruta de la base de datos de los municipios;
 #'     por omisión, tomado de la variable-ambiente DBDEPMUN
 #' @return logical
-#' @seealso municipios
+#' @seealso \code{municipios}
 #' @export
 es_municipio <- function(x, dbf = character()) {
     stopifnot("arg. x inadmisible" = filled_num(x) || filled_char(x),
@@ -163,7 +169,7 @@ es_municipio <- function(x, dbf = character()) {
 #' @param dbf character: ruta de la base de datos de los
 #'     departamentos; por omisión, se toma de la variable-ambiente
 #'     DBDEPMUN
-#' @seealso departamentos
+#' @seealso \code{departamentos}
 #' @export
 #'
 es_departamento <- function(x, dbf = character()) {
@@ -183,7 +189,7 @@ es_departamento <- function(x, dbf = character()) {
 #' @param mu integer: código del municipio
 #' @param dbf character: ruta de la base de datos de municipios
 #' @return integer
-#' @seealso municipios
+#' @seealso \code{municipios}
 #' @examples
 #' cod_dm(5, 5) #-> 505
 #' cod_dm(5, c(5, 20)) #-> c(505, 520)
@@ -215,7 +221,7 @@ codex_mun <- function(dp = integer(), mu = integer(),
     ii <- !es_dm(mm, dm)
 
     if (any(ii)) {
-        warning("\n...", sum(ii), " códigos inválidos")
+        warning("\n...", sum(ii), " códigos inválidos", call. = FALSE)
         mm[ii] <- NA_integer_
     }
     

@@ -30,15 +30,15 @@ shp_read <- function(shp = character()) {
 }
 
 #' Bloques-dpt
-#' @description Extrae la cobertura de un departamento específico, de
-#'     la cobertura de bloques de muestreo del país
-#' @details Supone que la cobertura de bloques contiene el atributo
-#'     que especifica el departamento al cual está asignado cada
+#' @description Extrae la cobertura de un departamento dado, de la
+#'     cobertura de bloques de muestreo del país
+#' @details Supone que la cobertura de bloques contiene un atributo
+#'     con el código (id) del departamento al cual está asignado cada
 #'     bloque
 #' @param cod integer: código del departamento
-#' @param cob character: ruta a cobertura de bloques del país
-#' @param dpt character: atributo con el código del departamento; por
-#'     omisión, "dpto"
+#' @param cob character: ruta a la cobertura de bloques del país
+#' @param dpt character: atributo con el código de los departamento;
+#'     por omisión, "dpto"
 #' @return objeto clase "sf"
 #' @export
 shp_blo_dpt <- function(cod = integer(), cob = character(),
@@ -69,10 +69,10 @@ shp_blo_dpt <- function(cod = integer(), cob = character(),
 
 #' Shape-save
 #' @description Guarda una cobertura de una sola capa como un archivo
-#'     tipo "shape". !ÔjÔ! : suplanta el archivo si ya existe. 
+#'     tipo "shape". !ÔjÔ! : suplanta el archivo si este ya existe. 
 #' @param x objeto clase sf: cobertura
 #' @param shp character: directorio y nombre del archivo
-#' @return logical: TRUE si no error
+#' @return logical: TRUE si no se produce un error
 #' @export
 #' @examples
 #' ## cob <- shp_read("c:/filepath/cob.shp")
@@ -118,7 +118,7 @@ shp_data_read <- function(x = character()) {
 }
 
 #' shp_data_save
-#' @description Guarda data frame como tabla de atributos de un shape
+#' @description Guarda data frame como la tabla de atributos de un shape
 #'     que ya existe
 #' @param x el data.frame
 #' @param shp nombre del archivo con extensión "shp"
@@ -133,7 +133,7 @@ shp_data_save <- function(x, shp = character()) {
         file.exists(shp)
         inherits(x, "data.frame")})
 
-    nf <- file.path(dirname(shp),
+    nf <- file.path(dirname(shp),p
                     sub("\\.shp$", ".dbf", basename(shp)))
     
     nok <- try(foreign::write.dbf(x, nf), silent = TRUE) %>%
@@ -165,41 +165,86 @@ shp_atributos <- function(x = character()) {
     na
 }
 
-#' Distribuir en réplicas
-#' @description crear indicador de réplica (submuestra)
-#' @param x data.frame con los datos de la cobertura de puntos
-#' @param nrep número de réplicas
-#' @param colrep columna con identificación del estrato
-#' @param orden columnas que se van a utilizar para ordenar la
-#'     asignación de las réplicas
-#' @return vector con los números de réplicas asignadas
-#' @export
-replica <- function(x, nrep = 5,
-                    colrep = "estrato", orden = NULL){
+#' KML
+#' @description Guarda objeto de clase \code{sf} en archivo de formato
+#'     kml.
+#' @details Tome en cuenta que todos los atributos de la cobertura
+#'     "shape" pasan como atributos del archivo "kml", y que por lo
+#'     tanto es conveniente, si el kml se visualizará en google-earth,
+#'     dejar en la cobertura sólo los atributos de interés.
+#' @param shp character o sf: nombre (character) de un archivo tipo
+#'     "shape" u objeto de clase \code{sf}
+#' @param kml character: nombre del archivo kml
+#' @return NULL si error o argumento kml
+shp_save_kml <- function(shp, kml) {
+    stopifnot("arg. kml inváliso" = ok_fname(kml))
 
-    assert_that(is.data.frame(x),
-                msg = "no es data frame")
-    assert_that(nrow(x) == nrep * (nrow(x) %/% nrep),
-                msg = "muestra no es múltiplo de réplicas")
-
-    if(is.null(orden)){#ordena por todas las columnas
-        orden <- length(x)
+    si <- inherits(shp, "sf")
+    if (!si) {
+        shp <- shp_read(shp)
+        si <- !is.null(shp)
     }
-    id <- seq_len(nrow(x))
-    nn <- order_df(x[orden])
-    ##!!! chk colrep no tenga nombre id
-    xx <- cbind(x[nn, colrep, drop = FALSE], id = id[nn])
 
-    zz <- Reduce(rbind,
-                 lapply(split(xx, xx[,colrep]),
-                        function(x){
-                            st <- nrow(x) %/% nrep
-                            ni <- sapply(sample(seq_len(nrep), nrep), seq,
-                                         by = nrep, length.out = st)
-                            dim(ni) <- c(nrow(x), 1)
-                            cbind(x[ni,], replica = rep(seq_len(nrep),
-                                                        each = st))
-                        }))
-    mm <- match(id, zz$id)
-    invisible(zz$replica[mm])
+    epsg_google_maps <- 3857
+    if (si) {
+        ## si no proj. no es lat-lon -> transformar
+        if (sf::st_crs(shp)$epsg != epsg_google_maps) {
+          shp <- sf::st_transform(shp, crs = epsg_google_maps)
+        }
+
+        w <- try(sf::st_write(shp, kml, driver = "kml"),
+                 silent = TRUE)
+        si <- !inherits(w, "try-error")
+    }
+
+    ifelse(si, kml, NULL)
 }
+
+
+
+
+## kml
+## función para cambiar el pushpin, el color, según id de punto
+library(xml2)
+
+fx <- file.path("c:/encuestas/marco/bloquespuntos/sel2021", "tst.kml")
+xm <- read_xml(fx)
+
+
+
+
+length(xm)
+length(xml_children(xm))
+xml_type(xm)
+xml_structure(xm)
+
+z <- xml_root(xm)
+xml_length(z)
+## [1] 1
+xml_attr(xml_children(z), "id")
+##> [1] "root_doc"
+
+
+y <- xml_children(z)
+xml_length(y)
+## > [1] 2
+
+xml_contents(xml_children(y)[[1]])
+## > {xml_nodeset (2)}
+## [1] <SimpleField name="upm" type="string"/>
+## [2] <SimpleField name="punto" type="int"/>
+
+xml_child(xml_children(y)[[1]], 1)
+## > {xml_node}
+## <SimpleField name="upm" type="string">
+
+w <- xml_find_all(z, ".//Schema")
+xml_length(w)
+
+class(w)
+w
+
+
+z[[0]]
+names(xm)
+xm[[1]]

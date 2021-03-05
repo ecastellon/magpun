@@ -28,8 +28,8 @@
 #'     un atributo con nombre "puntos"
 #' @param cols character o numeric: nombre (character) o posición
 #'     (numeric) de las columnas ('atributos') en la cobertura de
-#'     polígonos, que se trasladan a la de los puntos
-#'     seleccionados. Por omisión, no se trasladan atributos.
+#'     polígonos, que se trasladarán a la cobertura de los puntos
+#'     seleccionados. Por omisión no se trasladan atributos.
 #' @param orden character o integer: nombre (character) de las
 #'     columnas por las que se ordenan los polígonos antes de obtener
 #'     la muestra, o el vector (integer, obtenido con la función
@@ -44,7 +44,7 @@
 #' @param ruta character: nombre del archivo donde guardar el
 #'     resultado.
 #' @return objeto de clase "sf" o NULL
-#' @seealso n_ids
+#' @seealso \code{n_ids}
 #' @examples
 #' nc <- st_read(system.file("shape/nc.shp", package="sf"),
 #'               quiet = TRUE) %>%
@@ -71,6 +71,7 @@ muestra_puntos <- function(x, npun = "puntos", cols = character(),
               "arg. ruta inadmisible" = is.character(ruta))
 
     ## TODO verificar la geometría es multipolígono
+    ## los puntos asignados a los polígonos
     nc <- names(x)
     if (is.character(npun)) {
         stopifnot("arg. cpun no es atributo" = is.element(npun, nc))
@@ -81,6 +82,7 @@ muestra_puntos <- function(x, npun = "puntos", cols = character(),
                   "arg. cpun todo cero" = any(npun > 0))
     }
 
+    ## ordenar los polígonos
     if (filled_char(orden)) {
         if (all(is.element(orden, nc))) {
             xo <- x[, orden, drop = TRUE]
@@ -99,12 +101,15 @@ muestra_puntos <- function(x, npun = "puntos", cols = character(),
         }
     }
 
+    ## la muestra por polígono
     mp <- Map(sf::st_sample, x$geometry, x$puntos)
     ##mp <- sf::st_sample(x, npun)
 
+    ## dar nombre a los puntos
     id <- data.frame(idpt = n_ids(pref, sum(npun), mxch),
                      stringsAsFactors = FALSE)
 
+    ## columnas de la cobertura trasladan cob. puntos
     if (filled(cols)) {
         if (is.numeric(cols)) {
             cols <- nc[cols]
@@ -129,6 +134,7 @@ muestra_puntos <- function(x, npun = "puntos", cols = character(),
     }
     mp <- cbind(id, mp)
 
+    ## guardar resultado
     if (filled(ruta)) {
         if (ok_fname(ruta)) {
             shp_save(mp, ruta)
@@ -141,22 +147,26 @@ muestra_puntos <- function(x, npun = "puntos", cols = character(),
 }
 
 #' Réplicas-muestra
-#' @description Produce submuestras o réplicas dentro de los grupos de
-#'     datos (estratos o repeticiones) de una variable
+#' @description Al azar construye subgrupos de datos al interno de
+#'     otros grupos.
+#' @details Es una función de ayuda para llamar la función
+#'     \code{subgrupos_azar}, que produce grupos formados al azar,
+#'     dentro de otros grupos.
 #' @param x data.frame
 #' @param estrato character o numeric: nombre (character) o número de
-#'     la columna con los códigos o "id" del estrato
+#'     la columna con los códigos o "id" del estrato (grupo)
 #' @param replicas numeric: número de réplicas
 #' @param orden character o integer: nombre (character) de las
 #'     columnas que se van a utilizar para ordenar el data.frame de
 #'     forma creciente, o el orden (integer) previamente determinado
-#'     con la función "order". Por omisión, los datos no se ordenan.
+#'     con la función "order", antes de formar los subgrupos. Por
+#'     omisión, los datos no se ordenan.
 #' @param balance logical: TRUE si tamaño (número de elementos) de las
-#'     submuestras debe ser igual dentro de un mismo estrato
-#' @param msist logical: TRUE si las submuestras construidas de manera
-#'     sistemática
+#'     submuestras debe ser igual dentro de un mismo grupo
+#' @param msist logical: TRUE si las submuestras obtenidas por
+#'     selección sistemática
 #' @return integer
-#' @seealso subgrupos_azar
+#' @seealso \code{subgrupos_azar}
 #' @examples
 #' aa <- data.frame(x = 1:12, y = rep(1:2, each = 6))
 #' bb <- aa[sample(12),]
