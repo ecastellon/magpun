@@ -165,13 +165,16 @@ shp_atributos <- function(x = character()) {
     na
 }
 
-#' KML
+## -- archivos KML --
+
+#' KML write
 #' @description Guarda objeto de clase \code{sf} en archivo de formato
-#'     kml.
+#'     KML.
 #' @details Tome en cuenta que todos los atributos de la cobertura
-#'     "shape" pasan como atributos del archivo "kml", y que por lo
+#'     "shape" pasan como datos en el archivo "kml", y que por lo
 #'     tanto es conveniente, si el kml se visualizará en google-earth,
-#'     dejar en la cobertura sólo los atributos de interés.
+#'     dejar en la cobertura sólo los atributos que interesa presentar
+#'     en el mapa.
 #' @param shp character o sf: nombre (character) de un archivo tipo
 #'     "shape" u objeto de clase \code{sf}
 #' @param kml character: nombre del archivo kml
@@ -198,4 +201,303 @@ shp_save_kml <- function(shp, kml) {
     }
 
     ifelse(si, kml, NULL)
+}
+
+#' Ícono GE
+#' @description url de los íconos más comunes de google-earth
+#' @details Hay muchos íconos que ofrece GE para señalar la posición
+#'     de los puntos
+#'     (\code{http://kml4earth.appspot.com/icons.html}). Los tipos que
+#'     más se utilizan son las tachuelas (pushspin), raquetas (paddle)
+#'     y cuadrados a diferentes colores. La función devuelve la
+#'     dirección url de los íconos de esos 3 tipos, a 5 colores, junto
+#'     con las coordenadas que determinan la ubicación del ícono con
+#'     respecto a las del punto. Estos dos elementos se utilizan para
+#'     construir los elementos "href" y "hotSpot" de los nodos
+#'     IconStyle de los archivos KML.
+#' 
+#'     El parámetro "ico" es para indicar el tipo (tachuela, raqueta,
+#'     cuadro) y "col" para el color del ícono (rojo, verde, azul,
+#'     amarillo, blanco). Es suficiente pasar como argumento la
+#'     primera letra de las opciones, excepto para los colores
+#'     amarillo y azul que son necesarias las dos primeras para evitar
+#'     la ambigüedad. Si cualquiera de los dos no es una opción
+#'     valida, se devuelve la url de un círculo a color blanco.
+#' @param ico character: el tipo de ícono
+#' @param col character: el color del ícono
+#' @return list con "url" y "pos" para construir los elementos href y
+#'     hotSpot de los nodos StyleIcon de los archivos KML
+#' @keywords internal
+#' @examples
+#' icon_def(col = "az") #tachuela color azul
+#' icon_def("r", "am")  #raqueta color amarillo
+#' icon_def("")         #círculo blanco
+icon_def <- function(ico = "tachuela", col = "blanco") {
+    stopifnot(exprs = {
+        "arg. ico" = filled_char(ico)
+        "arg. col" = filled_char(col)
+    })
+
+    tico <- c(t = "tachuela", g = "raqueta", c = "cuadro")
+    cico <- c(r = "rojo", g = "verde", b = "azul", a = "amarillo",
+              w = "blanco")
+
+    ## default: círculo color blanco con centro negro
+    urlb <- "http://maps.google.com/mapfiles/kml/"
+    icon <- "shapes/placemark_circle.png"
+    hspt <- c(x = "0.5", y = "0.5", xunits = "fraction",
+              yunits = "fraction")
+
+    ico <- pmatch(ico, tico)
+    col <- pmatch(col, cico)
+    ## el default si no especifica tipo ícono y su color
+    mx <- paste("pushpin", c("red", "grn", "blue", "ylw", "wht"),
+                sep = "/") %>%
+        paste("pushpin.png", sep = "-") %>%
+        c(paste("paddle", c("red", "grn", "blu", "ylw", "wht"),
+                sep = "/") %>%
+          paste("blank.png", sep = "-")) %>%
+        c(paste("paddle", c("red", "grn", "blu", "ylw", "wht"),
+                sep = "/") %>%
+          paste("blank-lv.png", sep = "-")) %>%
+        matrix(nrow = 3, byrow = TRUE)
+    
+    hs <- list(c(x = "20",  xunits = "pixels",
+                 y = "1",   yunits = "pixels"),
+               c(x = "0.5", xunits = "fraction",
+                 y = "1",   yunits = "pixels"),
+               c(x = "0.5", xunits = "fraction",
+                 y = "0.5", yunits = "fraction"))
+    
+    if (!(is.na(ico) || is.na(col))) {
+        icon <- mx[ico, col]
+        hspt <- hs[[ico]]
+    }
+    
+    list(url = paste0(urlb, icon),
+         pos = hspt)
+}
+
+#' IconStyle
+#' @description Produce un nodo IconStyle de documento KML
+#' @details (\code{https://developers.google.com/kml/documentation/})
+#' @param ... admisibles: id, ico, col, color, escala, rumbo, url, pos
+#' @return nodo IconStyle
+#' @seealso \code{icon_def}
+#' @export
+#' @examples
+#' sty_ico()
+#' sty_ico(ico = "tach", col = "rojo")
+#' sty_ico(ico = "")
+sty_ico <- function(...) {
+    ## TODO: chk. args
+
+    ## -- especificaciones --
+    ## default
+    w <- icon_def() # default tachuela blanca
+    z <- list(color     = "ff0000ff", # rojo
+              colorMode = "normal",
+              escala    = 0.7,
+              rumbo     = 0,
+              url       = w$url,
+              pos       = w$pos)
+
+    ## cambios por argumentos en ...
+    y <- eval(substitute(alist(...)))
+    if (filled(y)) {
+        x <- c("ico", "col")
+        if (all(is.element(x, names(y)))) { # calculada
+            w <- do.call("icon_def", y[x])
+            y[["url"]] <- w$url
+            y[["pos"]] <- w$pos
+        }
+        x <- intersect(names(y), names(z))
+        if (filled_char(x)) {
+            z[x] <- y[x]
+        }
+    }
+
+    ## nodo a partir de lista de spec
+    id = ""
+    if (is.element(id, names(y))) {
+        id <- y[["id"]]
+    }
+    w <- list(IconStyle = structure(
+                  list(
+                      list(color   = list(z$color),
+                           colorMode = list(z$colorMode),
+                           scale   = list(z$escala),
+                           heading = list(z$rumbo),
+                           Icon    = list(href = list(z$url)),
+                           hotSpot = structure(list(),
+                                               x = z$pos[["x"]],
+                                               y = z$pos[["y"]],
+                                               xunits = z$pos[["xunits"]],
+                                               yunits = z$pos[["yunits"]])
+                           )), id = id))
+    
+    invisible(as_xml_document(w))
+}
+
+#' LabelStyle
+#' @description Nodo LabelStyle documento KML
+#' @details Estilo para el nombre del punto en el mapa
+#' @param ... admisibles: id, color, colorMode, escala
+#' @return nodo LabelStyle
+#' @export
+#' @examples
+#' sty_lab()
+#' sty_lab(id = "labRojo", color = "ffffff00", escala = 1.2)
+sty_lab <- function(...) {
+    ## default
+    z <- list(color     = "ff000000", # negro
+              colorMode = "normal",
+              escala    = 0.7)
+
+    y <- eval(substitute(alist(...)))
+    if (filled(y)) {
+        x <- intersect(names(y), names(z))
+        if (filled_char(x)) {
+            z[x] <- y[x]
+        }
+    }
+
+    ## nodo a partir de lista de spec
+    id = ""
+    if (is.element(id, names(y))) {
+        id <- y[["id"]]
+    }
+
+    w <- list(LabelStyle = structure(
+                  list(list(color = list(z$color),
+                            colorMode = list(z$colorMode),
+                            scale   = list(z$escala))
+                       ), id = id))
+
+    invisible(as_xml_document(w))
+}
+
+## Kindle sepia color code reading
+## background:#FBF0D9;color:#5F4B32;
+
+## BalloonStyle
+#' @description Nodo BalloonStyle documento KML
+#' @details Estilo del cuadro que emerge cuando "click" el ícono del
+#'     punto
+#' @param ... admisibles: bgcol, txtcol, texto, modo
+#' @return nodo BalloonStyle
+#' @export
+#' @examples
+#' sty_bal()
+sty_bal <- function(...) {
+    ## default
+    z <- list(bgcol  = "ffffffff", # blanco
+              txtcol = "ff000000", # negro
+              texto  = "$[name]",
+              modo   = "default")  # hide
+
+    y <- eval(substitute(alist(...)))
+    if (filled(y)) {
+        x <- intersect(names(y), names(z))
+        if (filled_char(x)) {
+            z[x] <- y[x]
+        }
+    }
+
+    ## nodo a partir de lista de spec
+    id = ""
+    if (is.element(id, names(y))) {
+        id <- y[["id"]]
+    }
+
+    w <- list(BalloonStyle = structure(
+                  list(list(bgColor     = list(z[[1]]),
+                            textColor   = list(z[[2]]),
+                            text        = list(z[[3]]),
+                            displayMode = list(z[[4]]))
+                       ), id = id))
+    
+    invisible(as_xml_document(w))
+}
+
+## produce StyleMap
+## normal, destacado: id del estilo para cada caso
+
+#' StyleMap
+#' @description Nodo StyleMap documento KML
+#' @details ver especificaciones GE
+#' @param id character: atributo id del estilo
+#' @param normal character: atributo id del estilo normal
+#' @param destacado character: atributo id del estilo alterno
+#' @return nodo StyleMap
+#' @export
+#' @examples
+#' sty_map(id = "estilo", "estilo1", "estilo2")
+sty_map <- function(id = character(), normal = character(),
+                    destacado = character()) {
+    stopifnot(exprs = {
+        "arg. id" = filled_char(id) && is_scalar(id)
+        "arg. norm." = filled_char(normal) && is_scalar(normal)
+        "arg. dest." = filled_char(destacado) && is_scalar(destacado)
+    })
+
+    ## valida inicial
+    normal <- paste0("#", sub("[^[:alnum:]]", "", normal))
+    destacado <- paste0("#", sub("[^[:alnum:]]", "", destacado))
+                      
+    w <- list(StyleMap = structure(
+                  list(Pair = list(
+                           list(key = list("normal"),
+                                styleUrl = list(normal))),
+                       Pair = list(
+                           list(key = list("highlight"),
+                                styleUrl = list(destacado))
+                       )), id = id))
+    
+    invisible(as_xml_document(w))
+}
+
+#' Style
+#' @description Nodo Style documento KML
+#' @details ver especificaciones
+#' @param id character: atributo id del nodo Style
+#' @param icon nodo IconStyle
+#' @param label nodo LabelStyle
+#' @param ball nodo BalloonStyle
+#' @return nodo Style
+#' @export
+#' @examples
+#' sty_sty("estilo")
+#' sty_sty("est", sty_ico())
+sty_sty <- function(id = character(), icon = NULL,
+                    label = NULL, ball = NULL) {
+    stopifnot(exprs = {
+        "arg. id" = filled_char(id) && is_scalar(id)
+        "arg. icon" = is.null(icon) ||
+            (inherits(icon, "xml_node") &&
+             tolower(xml_name(icon)) == "iconstyle")
+        "arg. label" = is.null(label) ||
+            (inherits(label, "xml_node") &&
+             tolower(xml_name(label)) == "labelstyle")
+        
+        "arg. ball" = is.null(ball) ||
+            (inherits(ball, "xml_node") &&
+             tolower(xml_name(ball)) == "balloonstyle") })
+
+    ## nodo base
+    w <- read_xml(paste0("<Style id = '", id, "'/>"))
+
+    if (!is.null(icon)) {#chk válido
+        xml_add_child(w, icon)
+    }
+    
+    if (!is.null(label)) {
+        xml_add_child(w, label)
+    }
+
+    if (!is.null(ball)) {
+        xml_add_child(w, ball)
+    }
+
+    invisible(w)
 }
