@@ -133,7 +133,7 @@ shp_data_save <- function(x, shp = character()) {
         file.exists(shp)
         inherits(x, "data.frame")})
 
-    nf <- file.path(dirname(shp),p
+    nf <- file.path(dirname(shp),
                     sub("\\.shp$", ".dbf", basename(shp)))
     
     nok <- try(foreign::write.dbf(x, nf), silent = TRUE) %>%
@@ -380,7 +380,7 @@ sty_lab <- function(...) {
 ## Kindle sepia color code reading
 ## background:#FBF0D9;color:#5F4B32;
 
-## BalloonStyle
+#' BalloonStyle
 #' @description Nodo BalloonStyle documento KML
 #' @details Estilo del cuadro que emerge cuando "click" el ícono del
 #'     punto
