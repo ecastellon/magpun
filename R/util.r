@@ -62,6 +62,15 @@ filled_int <- function(x) {
     is.integer(x) && length(x)
 }
 
+#' list-no-vac
+#' @description vector is of logical type and has elements?
+#' @param x vector
+#' @return logical
+#' @keywords internal
+filled_list <- function(x) {
+    is.list(x) && length(x)
+}
+
 #' Número-entre
 #' @description Comprueba si un número está entre los límites de un
 #'     intervalo
@@ -288,6 +297,12 @@ dots_arg <- function(...) {
             NULL
         }
     }
+}
+
+
+dots_values_as_list <- function(...) {
+    eval(substitute(alist(...))) %>%
+        lapply(list)
 }
 
 #' save

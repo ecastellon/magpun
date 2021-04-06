@@ -281,6 +281,8 @@ icon_def <- function(ico = "tachuela", col = "blanco") {
 #' IconStyle
 #' @description Produce un nodo IconStyle de documento KML
 #' @details (\code{https://developers.google.com/kml/documentation/})
+#' @param as_xml logical: devuelve documento xml o lista; FALSE por
+#'     omisión
 #' @param ... admisibles: id, ico, col, color, escala, rumbo, url, pos
 #' @return nodo IconStyle
 #' @seealso \code{icon_def}
@@ -289,7 +291,7 @@ icon_def <- function(ico = "tachuela", col = "blanco") {
 #' sty_ico()
 #' sty_ico(ico = "tach", col = "rojo")
 #' sty_ico(ico = "")
-sty_ico <- function(...) {
+sty_ico <- function(as_xml = FALSE, ...) {
     ## TODO: chk. args
 
     ## -- especificaciones --
@@ -336,19 +338,22 @@ sty_ico <- function(...) {
                                                yunits = z$pos[["yunits"]])
                            )), id = id))
     
-    invisible(as_xml_document(w))
+    if (as_xml) w <- as_xml_document(w)
+    invisible(w)
 }
 
 #' LabelStyle
 #' @description Nodo LabelStyle documento KML
 #' @details Estilo para el nombre del punto en el mapa
+#' @param as_xml logical: devuelve documento xml o lista; FALSE por
+#'     omisión
 #' @param ... admisibles: id, color, colorMode, escala
 #' @return nodo LabelStyle
 #' @export
 #' @examples
 #' sty_lab()
 #' sty_lab(id = "labRojo", color = "ffffff00", escala = 1.2)
-sty_lab <- function(...) {
+sty_lab <- function(as_xml = FALSE, ...) {
     ## default
     z <- list(color     = "ff000000", # negro
               colorMode = "normal",
@@ -374,7 +379,8 @@ sty_lab <- function(...) {
                             scale   = list(z$escala))
                        ), id = id))
 
-    invisible(as_xml_document(w))
+    if (as_xml) w <- as_xml_document(w)
+    invisible(w)
 }
 
 ## Kindle sepia color code reading
@@ -384,12 +390,14 @@ sty_lab <- function(...) {
 #' @description Nodo BalloonStyle documento KML
 #' @details Estilo del cuadro que emerge cuando "click" el ícono del
 #'     punto
+#' @param as_xml logical: devuelve documento xml o lista; FALSE por
+#'     omisión
 #' @param ... admisibles: bgcol, txtcol, texto, modo
 #' @return nodo BalloonStyle
 #' @export
 #' @examples
 #' sty_bal()
-sty_bal <- function(...) {
+sty_bal <- function(as_xml = FALSE, ...) {
     ## default
     z <- list(bgcol  = "ffffffff", # blanco
               txtcol = "ff000000", # negro
@@ -416,8 +424,9 @@ sty_bal <- function(...) {
                             text        = list(z[[3]]),
                             displayMode = list(z[[4]]))
                        ), id = id))
-    
-    invisible(as_xml_document(w))
+
+    if (as_xml) w <- as_xml_document(w)
+    invisible(w)
 }
 
 ## produce StyleMap
@@ -426,6 +435,8 @@ sty_bal <- function(...) {
 #' StyleMap
 #' @description Nodo StyleMap documento KML
 #' @details ver especificaciones GE
+#' @param as_xml logical: devuelve documento xml o lista; FALSE por
+#'     omisión
 #' @param id character: atributo id del estilo
 #' @param normal character: atributo id del estilo normal
 #' @param destacado character: atributo id del estilo alterno
@@ -433,7 +444,8 @@ sty_bal <- function(...) {
 #' @export
 #' @examples
 #' sty_map(id = "estilo", "estilo1", "estilo2")
-sty_map <- function(id = character(), normal = character(),
+sty_map <- function(as_xml = FALSE, id = character(),
+                    normal = character(),
                     destacado = character()) {
     stopifnot(exprs = {
         "arg. id" = filled_char(id) && is_scalar(id)
@@ -453,8 +465,9 @@ sty_map <- function(id = character(), normal = character(),
                            list(key = list("highlight"),
                                 styleUrl = list(destacado))
                        )), id = id))
-    
-    invisible(as_xml_document(w))
+
+    if (as_xml) w <- as_xml_document(w)
+    invisible(w)
 }
 
 #' Style
@@ -501,3 +514,188 @@ sty_sty <- function(id = character(), icon = NULL,
 
     invisible(w)
 }
+
+## ...: name, Snippet, visibility, open
+kml_root <- function(..., as_xml = TRUE) {
+
+    nodes <- c("name", "Snippet", "visibility", "open")
+    z <- list(list(name = list("root")),
+              list(Snippet = list("root")),
+              list(visibility = list(0)),
+              list(open = list(0)))
+    
+    y <- dots_values_as_list(...)
+    if (filled(y)) {
+        ny <- names(y)
+        iy <- which(ny %in% nodes)
+        if (filled(iy)) {
+            y <- lapply(iy, function(x) y[x])
+            iz <- which(nodes %in% ny)
+            z[iz] <- y
+        }
+    }
+
+    w <- list(Document = structure(z, id = "id_root"))
+    if (as_xml) w <- as_xml_document(w)
+    invisible(w)
+}
+
+
+node_folder <- function(...) {
+}
+
+node_placemark <- function(...) {
+}
+
+node_point <- function(x, y, as_xml = TRUE) {
+    x <- make_node("coordinates", paste(x, y, sep = ","),
+                   as_xml = FALSE)
+    w <- list(Point = x)
+    if (as_xml) w <- as_xml_document(w)
+    invisible(w)
+}
+
+aa <- node_point(-86.6582466955103,13.4430675626383)
+as.character(aa)
+
+node_coordinates <- function(x, y) {
+}
+
+node_snippet <- function(x) {
+}
+
+node_data <- function(...) {
+}
+
+node_visibility <- function(x) {
+}
+
+node_open <- function(x) {
+}
+
+node_doc <- function(...) {
+}
+
+node_name <- function(x) {
+}
+
+
+#' @return lista de nodos xml o lista de listas
+make_node_set <- function(tag, value, atr = list(), as_xml = TRUE) {
+    ## validar: tiene sentido si value un vector con más de uno
+    ## length(value) == length(atr)
+    nv <- length(value)
+    ni <- length(atr)
+    if (nv > ni) {
+        atr <- rep_len(atr, nv)
+    } else {
+        if (nv < ni) {
+            value <- rep_len(value, ni)
+        }
+    }
+
+    Map(function(x, y) make_node(tag = tag, x, y, as_xml), value, atr,
+        USE.NAMES = FALSE)
+}
+
+bb <- make_node_set("name", letters[1:3])
+as.character(bb[[1]])
+as.character(bb[[3]])
+
+bb <- make_node_set("name", letters[1:3], as_xml = FALSE)
+dd <- list(names = bb)
+ee <- as_xml_document(dd)
+as.character(ee)
+
+#' @return nodo xml o list
+make_node <- function(tag, value = "", atr = list(), as_xml = TRUE) {
+    x <- list(value)
+    if (filled_list(atr)) attributes(x) <- atr
+
+    w <- list(x)
+    names(w) <- tag
+    
+    if (as_xml) w <- as_xml_document(w)
+    
+    invisible(w)
+}
+
+bb <- make_node("name", 5001, atr = list(id = "5001", bb = "no"))
+aa <- make_node("Placemark", "")
+xml_add_child(aa, bb)
+
+kml_doc <- function(root) {
+    x <- xml_new_root("kml",
+                      xmlns = "http://www.opengis.net/kml/2.2") %>%
+        xml_add_child(root)
+    
+    invisible(x)
+}
+
+## especificaciones
+## - Document
+##   name: nombre de encuesta; e.g. "Seguimiento, marzo"
+##   Snippet: fecha reporte; e.g. "15 de marzo"
+##   visibility: 0
+##   open: 0
+## - Folder delegaciones
+##   name: "delegaciones"
+##   Snippet: nada
+##   open: 0
+##   visibility: 0
+##   - Placemark
+##     - ExtendedData
+##       - Data
+##         puntos asignados
+##         puntos visitados
+##         porcentaje visitados
+##         técnico: puntos visitados
+##     - description
+##       - CDATA
+##         los datos en nodo Data
+##         gráfica de código de control
+##         gráfica maptree(?)
+##         foto tropa
+## - Folder departamento
+##   name: nombre departamento
+##   Snippet: nada
+##   open: 0
+##   visibility: 0
+## - Folder municipio
+##   name: nombre municipio
+##   Snippet: nada
+##   open: 0
+##   visibility: 0
+##   - Placemark
+##     name: punto
+##     Snippet: nombre del técnico
+##     visibility: 1
+##     open: 1
+##     - ExtendedData
+##       - Data
+##         técnico
+##         departamento
+##         municipio
+##         localidad
+##         nombre finca
+##         dirección finca
+##     - description
+##       - CDATA
+##         los datos en nodos Data
+##         foto
+##     - Point
+##       - coordinates
+
+#' mapa-avance
+#' @description Mapa kml estado puntos encuesta
+#' @details
+#' @param xy matrix: coordenadas lat-lon de los puntos
+#' @param dfe data frame código de control leídos de la base de datos
+#' @param dfp data frame de los puntos de la encuesta del mes
+#' @return character
+#' @examples
+kml_estado_puntos <- function(xy, dfe, dfp) {
+    
+}
+
+test_file(RD$find_file("tests/testthat/test-kml.r"))
