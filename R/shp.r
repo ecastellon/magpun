@@ -291,7 +291,7 @@ icon_def <- function(ico = "tachuela", col = "blanco") {
 #' sty_ico()
 #' sty_ico(ico = "tach", col = "rojo")
 #' sty_ico(ico = "")
-sty_ico <- function(as_xml = FALSE, ...) {
+sty_ico <- function(..., as_xml = TRUE) {
     ## TODO: chk. args
 
     ## -- especificaciones --
@@ -540,12 +540,63 @@ kml_root <- function(..., as_xml = TRUE) {
     invisible(w)
 }
 
+## --- prueba varias funciones en lista
+funs <- list(function(x) x * x,
+             function(x, y) x + y)
+
+res <- Map(do.call, funs, list(list(x = 3), list(x = 3, y = 2)))
+res[[1]]
+res[[2]]
+
+funs <- list(
+    name = function(...) {
+        p <- list(...)
+        node_name(value = p$name)
+    },
+    open = function(...) {
+        p <- list(...)
+        node_open(p$open)
+    }
+)
+
+aa <- lapply(funs, function(f) f(name = "jos", open = 1L))
+length(aa)
+as.character(aa[[2]])
+## ---
 
 node_folder <- function(...) {
 }
 
 node_placemark <- function(...) {
 }
+
+node_data_set <- function(values, names, as_xml = TRUE) {
+    ## chk length(values) == length(names)
+    Map(node_data, values, names, as_xml)
+}
+
+aa <- node_data_set(1:3, letters[1:3])
+length(aa)
+as.character(aa[[3]])
+
+aa <- node_data_set(1:3, letters[1:3], as_xml = FALSE)
+str(aa[[3]])
+
+bb <- list(ExtendedData = aa)
+cc <- as_xml_document(bb)
+as.character(cc)
+
+#' @details Falta displayName
+#' @return nodo o lista
+node_data <- function(value, name, as_xml = TRUE) {
+    x <- make_node("value", value, as_xml = FALSE)
+    w <- list(Data = structure(x, name = name))
+    if (as_xml) w <- as_xml_document(w)
+    invisible(w)
+}
+
+aa <- node_data(3, "pp")
+as.character(aa)
 
 node_point <- function(x, y, as_xml = TRUE) {
     x <- make_node("coordinates", paste(x, y, sep = ","),
@@ -561,25 +612,41 @@ as.character(aa)
 node_coordinates <- function(x, y) {
 }
 
-node_snippet <- function(x) {
-}
-
-node_data <- function(...) {
-}
-
-node_visibility <- function(x) {
-}
-
-node_open <- function(x) {
-}
-
 node_doc <- function(...) {
 }
 
-node_name <- function(x) {
+node_icon <- function(hrf) {
+    x <- node_href(hrf, as_xml = FALSE)
+    w <- list(Icon = x)
+    if (as_xml) w <- as_xml_document(w)
+    invisible(w)
 }
 
+node_color <- purrr::partial(make_node, tag = "color")
+node_color_mode <- purrr::partial(make_node, tag = "colorMode")
+node_scale <- purrr::partial(make_node, tag = "scale")
+node_heading <- purrr::partial(make_node, tag = "heading")
 
+node_bg_color <- purrr::partial(make_node, tag = "bgColor")
+node_text_color <- purrr::partial(make_node, tag = "textColor")
+node_text <- purrr::partial(make_node, tag = "text")
+node_display_mode <- purrr::partial(make_node, tag = "displayMode")
+node_description <- purrr::partial(make_node, tag = "description")
+node_key <- purrr::partial(make_node, tag = "key")
+node_href <- purrr::partial(make_node, tag = "href")
+node_hot_spot <- purrr::partial(make_node, tag = "hotSpot")
+node_style_url <- purrr::partial(make_node, tag = "styleUrl")
+node_snippet <- purrr::partial(make_node, tag = "Snippet")
+node_visibility <- purrr::partial(make_node, tag = "visibility")
+node_open <- purrr::partial(make_node, tag = "open")
+node_name <- purrr::partial(make_node, tag = "name")
+
+aa <- node_name("arturo", atr = list(id=3))
+as.character(aa)
+
+#' @description Conjunto de nodos con el mismo nombre, diferentes valores
+#'     o atributos
+#' @details Si as_xml FALSE, para construir padre con hijos
 #' @return lista de nodos xml o lista de listas
 make_node_set <- function(tag, value, atr = list(), as_xml = TRUE) {
     ## validar: tiene sentido si value un vector con más de uno

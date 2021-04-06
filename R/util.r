@@ -1,5 +1,8 @@
 # -*- coding:utf-8 -*-
 
+## TODO
+## documentar dots_values_as_list, en
+
 ## private functions
 
 #' length
@@ -69,6 +72,24 @@ filled_int <- function(x) {
 #' @keywords internal
 filled_list <- function(x) {
     is.list(x) && length(x)
+}
+
+#' valida-name
+#' @description Valida nombres de variables
+#' @param x vector
+#' @return logical
+#' @keywords internal
+is_name <- function(x) {
+    length(x) && identical(x, make.names(x))
+}
+
+#' nombre-scalar
+#' @description Valida nombre escalar
+#' @param x vector
+#' @return logical
+#' @keywords internal
+is_scalar_name <- function(x) {
+    length(x) == 1L && identical(x, make.names(x))
 }
 
 #' Número-entre
@@ -299,7 +320,9 @@ dots_arg <- function(...) {
     }
 }
 
-
+#' @description Los argumentos en ... devueltos como lista
+#' @details Para construir nodos KML
+#' @return list
 dots_values_as_list <- function(...) {
     eval(substitute(alist(...))) %>%
         lapply(list)
@@ -438,6 +461,13 @@ solo_letras_ascii <- function(x = character()) {
 }
 
 ##--- misc ---
+
+#' en
+#' @description Alias de %in%
+en <- function(x, y) {
+    mm <- match(x, y)
+    !is.na(mm)
+}
 
 #' Grupos-azar
 #' @description Crea grupos escogidos al azar, dentro de otros grupos
