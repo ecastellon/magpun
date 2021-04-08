@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+## -*- coding: utf-8 -*-
 ##--- selección muestra de puntos ---
 ## v.0.0 202011
 
@@ -278,6 +278,10 @@ icon_def <- function(ico = "tachuela", col = "blanco") {
          pos = hspt)
 }
 
+## http://maps.google.com/mapfiles/kml/pal3/icon31.png normal
+## http://maps.google.com/mapfiles/kml/pal3/icon23.png destacado
+
+
 #' IconStyle
 #' @description Produce un nodo IconStyle de documento KML
 #' @details (\code{https://developers.google.com/kml/documentation/})
@@ -291,7 +295,7 @@ icon_def <- function(ico = "tachuela", col = "blanco") {
 #' sty_ico()
 #' sty_ico(ico = "tach", col = "rojo")
 #' sty_ico(ico = "")
-sty_ico <- function(..., as_xml = TRUE) {
+sty_ico <- function(..., as_xml = FALSE) {
     ## TODO: chk. args
 
     ## -- especificaciones --
@@ -353,7 +357,7 @@ sty_ico <- function(..., as_xml = TRUE) {
 #' @examples
 #' sty_lab()
 #' sty_lab(id = "labRojo", color = "ffffff00", escala = 1.2)
-sty_lab <- function(as_xml = FALSE, ...) {
+sty_lab <- function(..., as_xml = FALSE) {
     ## default
     z <- list(color     = "ff000000", # negro
               colorMode = "normal",
@@ -397,7 +401,7 @@ sty_lab <- function(as_xml = FALSE, ...) {
 #' @export
 #' @examples
 #' sty_bal()
-sty_bal <- function(as_xml = FALSE, ...) {
+sty_bal <- function(..., as_xml = FALSE) {
     ## default
     z <- list(bgcol  = "ffffffff", # blanco
               txtcol = "ff000000", # negro
@@ -444,9 +448,9 @@ sty_bal <- function(as_xml = FALSE, ...) {
 #' @export
 #' @examples
 #' sty_map(id = "estilo", "estilo1", "estilo2")
-sty_map <- function(as_xml = FALSE, id = character(),
+sty_map <- function(id = character(),
                     normal = character(),
-                    destacado = character()) {
+                    destacado = character(), as_xml = FALSE) {
     stopifnot(exprs = {
         "arg. id" = filled_char(id) && is_scalar(id)
         "arg. norm." = filled_char(normal) && is_scalar(normal)

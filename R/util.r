@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 
 ## TODO
-## documentar dots_values_as_list, en
+## documentar dots_values_as_list
 
 ## private functions
 
@@ -462,12 +462,13 @@ solo_letras_ascii <- function(x = character()) {
 
 ##--- misc ---
 
-#' en
-#' @description Alias de %in%
-en <- function(x, y) {
-    mm <- match(x, y)
-    !is.na(mm)
-}
+#' Alias %in%
+#' @description Operado infijo %in% como función
+#' @param x vector
+#' @param y vector
+#' @return logical
+#' @export
+en <- function(x, y) match(x, y, nomatch = 0) > 0
 
 #' Grupos-azar
 #' @description Crea grupos escogidos al azar, dentro de otros grupos
