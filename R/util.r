@@ -470,6 +470,76 @@ solo_letras_ascii <- function(x = character()) {
 #' @export
 en <- function(x, y) match(x, y, nomatch = 0) > 0
 
+#' buscar-remplazar
+#' @description Busca elementos de un vector en otro, y remplaza con
+#'     otro donde haya un match.
+#' @details Hace un match del arg. 'busca' en el arg. 'buscaen'. Los
+#'     elementos del arg. 'remplazo' donde la función match no
+#'     devuelva NA, remplazan los correspondientes del arg. 'x'. El
+#'     número de elementos del arg. 'x' debe ser igual al del
+#'     arg. 'busca', y los del arg. 'buscaen' a los del
+#'     arg. 'remplazo'. El modo del arg. 'x' debe ser igual al de
+#'     'remplazo' (excepto cuando arg. 'x' es objeto NULL), y el modo
+#'     del arg. 'busca' al de 'buscaen'.
+#'
+#'     El arg. 'x' es NULL por omisión. En este caso arg. 'x' se
+#'     inicializa a vector con igual número de elementos de
+#'     arg. 'busca' y mismo modo que arg. 'remplazo'. Los elementos de
+#'     arg. 'x' son ceros o NA, según lo diga el arg. 'toNA'. Son NA
+#'     si arg. 'toNA' es TRUE (por omisión).
+#' @param x vector o NULL (por omisión)
+#' @param busca vector con los elementos a buscar
+#' @param buscaen vector donde se buscan los elementos
+#' @param remplazo vector con los elementos que remplazarán los
+#'     correspondientes en 'x'
+#' @param msg TRUE por omisión; FALSE suprime mensajes de advertencia
+#' @param toNA logical: TRUE por omisión.
+#' @return vector
+#' @examples
+#' x <- letters[1:4]
+#' y <- 8:1
+#' z <- letters[1:8]
+#' (remplazar(busca = x, buscaen = z, remplazo = y))
+#' w <- 1:4
+#' (remplazar(w, x, z, y))
+#' @export
+#' @author eddy castellón
+remplazar <- function(x = NULL, busca, buscaen, remplazo,
+                      msg = TRUE, toNA = TRUE) {
+    stopifnot(exprs = {
+        "arg. incompat." <- filled(buscaen) && filled(remplazo) &&
+            length(buscaen) == length(remplazo)
+        "arg. incompat." <- filled(busca) &&
+            mode(busca) == mode(buscaen)
+        "arg. x inadmisible" <- is.null(x) ||
+            (length(x) == length(busca) &&
+                mode(x) == mode(remplazo))
+    })
+
+    if (is.null(x)) {
+        x <- vector(mode(remplazo), length(busca))
+        if (toNA) {
+            is.na(x) <- seq_along(x)
+        }
+    }
+
+    mm <- match(busca, buscaen)
+
+    ii <- !is.na(mm)
+    if (any(ii)) {
+        x[ii] <- remplazo[mm[ii]]
+        if (msg) {
+            message("... ", sum(ii), " remplazos !!!")
+        }
+    } else {
+        if (msg) {
+            message("... ningún remplazo !!!" )
+        }
+    }
+
+    invisible(x)
+}
+
 #' Grupos-azar
 #' @description Crea grupos escogidos al azar, dentro de otros grupos
 #' @details Una variable que tiene datos repetidos con los que se
