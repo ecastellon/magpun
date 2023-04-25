@@ -102,12 +102,15 @@ muestra_puntos <- function(x, npun = "puntos", cols = character(),
     }
 
     ## la muestra por polígono
-    mp <- Map(sf::st_sample, x$geometry, x$puntos)
+    mp <- Map(sf::st_sample, x$geometry, x$puntos) %>%
+        Reduce(c, .)
     ##mp <- sf::st_sample(x, npun)
 
     ## dar nombre a los puntos
     id <- data.frame(idpt = n_ids(pref, sum(npun), mxch),
-                     stringsAsFactors = FALSE)
+                     stringsAsFactors = FALSE,
+                     geometry = mp) %>%
+        sf::st_sf(crs = sf::st_crs(x))
 
     ## columnas de la cobertura trasladan cob. puntos
     if (filled(cols)) {
@@ -132,18 +135,17 @@ muestra_puntos <- function(x, npun = "puntos", cols = character(),
             id <- cbind(id, dd)
         }
     }
-    mp <- cbind(id, mp)
-
+    
     ## guardar resultado
     if (filled(ruta)) {
         if (ok_fname(ruta)) {
-            shp_save(mp, ruta)
+            shp_save(id, ruta)
         } else {
             message("\n ruta no válida !!!")
         }
     }
 
-    invisible(mp)
+    invisible(id)
 }
 
 #' Réplicas-muestra
