@@ -126,7 +126,7 @@ muestra_puntos <- function(x, npun = "puntos", cols = character(),
             if (length(cc) < length(cols)) {
                 message("\n... algunos atributos no existen !!!")
             }
-            nn <- sf::st_intersects(mp, x) %>% simplify2array
+            nn <- sf::st_intersects(id, x) %>% simplify2array
             dd <- x[nn, cc, drop = TRUE] #atributos
             if (length(cc) == 1) {
                 dd <- data.frame(x = dd) %>% set_names(cc)
