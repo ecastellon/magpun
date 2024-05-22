@@ -320,6 +320,7 @@ dots_arg <- function(...) {
     }
 }
 
+#' dots-par-list
 #' @description Los argumentos en ... devueltos como lista
 #' @details Para construir nodos KML
 #' @return list
